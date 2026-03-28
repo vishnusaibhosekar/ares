@@ -1,0 +1,233 @@
+{
+    "description": "ARES API Sample Payloads - Request and Response Examples",
+    "version": "1.0.0",
+    "base_url": "http://localhost:3000",
+    "endpoints": {
+        "GET /health": {
+            "description": "Check API health and dependencies",
+            "request": null,
+            "response_success": {
+                "status": "ok",
+                "timestamp": "2024-03-28T14:30:00.000Z",
+                "version": "1.0.0",
+                "database": "connected",
+                "embeddings": "ready",
+                "llm": "not_configured",
+                "uptime_seconds": 3600
+            }
+        },
+        "POST /api/seeds": {
+            "description": "Seed database with test data (development only)",
+            "request": {
+                "count": 10,
+                "include_matches": true
+            },
+            "response_success": {
+                "sites_created": 10,
+                "entities_created": 25,
+                "clusters_created": 3,
+                "embeddings_created": 10
+            }
+        },
+        "POST /api/ingest-site": {
+            "description": "Ingest a new suspicious storefront for analysis",
+            "request": {
+                "url": "https://fake-luxe-bags.shop",
+                "domain": "fake-luxe-bags.shop",
+                "page_text": "Welcome to Luxury Outlet! 50% off Louis Vuitton, Gucci, Prada. Contact: +86 138 1234 5678 via WhatsApp. Ships worldwide within 3 days. No returns on sale items.",
+                "entities": {
+                    "phones": [
+                        "+86 138 1234 5678"
+                    ],
+                    "emails": [
+                        "support@luxe-outlet.cn"
+                    ]
+                },
+                "attempt_resolve": true,
+                "use_llm_extraction": false
+            },
+            "response_success": {
+                "site_id": "550e8400-e29b-41d4-a716-446655440000",
+                "entities_extracted": 2,
+                "embeddings_generated": 1,
+                "resolution": {
+                    "cluster_id": "550e8400-e29b-41d4-a716-446655440001",
+                    "confidence": 0.87,
+                    "explanation": "This storefront strongly matches an existing operator cluster based on repeated contact identifiers and semantically similar policy language.",
+                    "matching_signals": [
+                        "shared_phone",
+                        "similar_policy_text"
+                    ]
+                }
+            },
+            "response_no_match": {
+                "site_id": "550e8400-e29b-41d4-a716-446655440099",
+                "entities_extracted": 1,
+                "embeddings_generated": 1,
+                "resolution": null
+            },
+            "response_error_validation": {
+                "error": "Validation failed",
+                "code": "VALIDATION_ERROR",
+                "details": {
+                    "issues": [
+                        {
+                            "path": [
+                                "url"
+                            ],
+                            "message": "Invalid URL format"
+                        }
+                    ]
+                },
+                "timestamp": "2024-03-28T14:30:00.000Z",
+                "request_id": "req_abc123"
+            }
+        },
+        "POST /api/resolve-actor": {
+            "description": "Resolve a site to identify the operator behind it",
+            "request": {
+                "url": "https://mirror-designer.cn",
+                "domain": "mirror-designer.cn",
+                "page_text": "Fast shipping worldwide. WhatsApp support 24/7. Telegram: @designer_outlet. Policy: No returns on discount items.",
+                "entities": {
+                    "phones": [
+                        "+86 138 1234 5678"
+                    ],
+                    "handles": [
+                        {
+                            "type": "telegram",
+                            "value": "@designer_outlet"
+                        }
+                    ]
+                }
+            },
+            "response_success": {
+                "actor_cluster_id": "550e8400-e29b-41d4-a716-446655440001",
+                "confidence": 0.92,
+                "related_domains": [
+                    "fake-luxe-bags.shop",
+                    "luxury-replica-shop.ru",
+                    "designer-outlet-china.com"
+                ],
+                "related_entities": [
+                    {
+                        "type": "phone",
+                        "value": "+8613812345678",
+                        "count": 5
+                    },
+                    {
+                        "type": "handle",
+                        "value": "@designer_outlet",
+                        "count": 3
+                    }
+                ],
+                "matching_signals": [
+                    "shared_phone",
+                    "shared_telegram_handle",
+                    "similar_policy_text"
+                ],
+                "explanation": "This domain matches an existing Shenzhen-based operator cluster via shared WhatsApp number (+86 138 1234 5678), shared Telegram handle (@designer_outlet), and near-identical shipping policy language. Confidence: 92%."
+            },
+            "response_no_match": {
+                "actor_cluster_id": null,
+                "confidence": 0.15,
+                "related_domains": [],
+                "related_entities": [],
+                "matching_signals": [],
+                "explanation": "No matching operator cluster found. This appears to be a new or unrelated storefront."
+            }
+        },
+        "GET /api/clusters/:id": {
+            "description": "Get detailed information about an operator cluster",
+            "request": "GET /api/clusters/550e8400-e29b-41d4-a716-446655440001",
+            "response_success": {
+                "cluster": {
+                    "id": "550e8400-e29b-41d4-a716-446655440001",
+                    "name": "Shenzhen Designer Replica Syndicate",
+                    "confidence": 0.89,
+                    "description": "High-confidence operator cluster specializing in luxury brand counterfeit distribution.",
+                    "created_at": "2024-03-27T14:22:30Z",
+                    "updated_at": "2024-03-28T09:15:45Z"
+                },
+                "sites": [
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440002",
+                        "domain": "fake-luxe-bags.shop",
+                        "url": "https://fake-luxe-bags.shop",
+                        "first_seen_at": "2024-03-27T14:22:30Z"
+                    },
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440003",
+                        "domain": "luxury-replica-shop.ru",
+                        "url": "https://luxury-replica-shop.ru",
+                        "first_seen_at": "2024-03-27T15:10:20Z"
+                    }
+                ],
+                "entities": [
+                    {
+                        "type": "phone",
+                        "value": "+8613812345678",
+                        "normalized_value": "+8613812345678",
+                        "count": 5,
+                        "sites_using": 5
+                    },
+                    {
+                        "type": "email",
+                        "value": "support@luxeoutlet.cn",
+                        "normalized_value": "support@luxeoutlet.cn",
+                        "count": 3,
+                        "sites_using": 3
+                    }
+                ],
+                "risk_score": 0.78,
+                "total_unique_entities": 7,
+                "resolution_runs": 12
+            },
+            "response_error_not_found": {
+                "error": "Cluster not found",
+                "code": "NOT_FOUND",
+                "timestamp": "2024-03-28T14:30:00.000Z",
+                "request_id": "req_xyz789"
+            }
+        }
+    },
+    "common_error_responses": {
+        "validation_error": {
+            "status_code": 400,
+            "example": {
+                "error": "Validation failed",
+                "code": "VALIDATION_ERROR",
+                "details": {
+                    "issues": [
+                        {
+                            "path": [
+                                "field"
+                            ],
+                            "message": "Error message"
+                        }
+                    ]
+                },
+                "timestamp": "2024-03-28T14:30:00.000Z",
+                "request_id": "req_abc123"
+            }
+        },
+        "not_found": {
+            "status_code": 404,
+            "example": {
+                "error": "Resource not found",
+                "code": "NOT_FOUND",
+                "timestamp": "2024-03-28T14:30:00.000Z",
+                "request_id": "req_def456"
+            }
+        },
+        "internal_error": {
+            "status_code": 500,
+            "example": {
+                "error": "Internal server error",
+                "code": "INTERNAL_ERROR",
+                "timestamp": "2024-03-28T14:30:00.000Z",
+                "request_id": "req_ghi789"
+            }
+        }
+    }
+}
