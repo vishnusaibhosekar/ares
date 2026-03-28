@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (including optional for @insforge/sdk)
+# Install all dependencies (including dev for TypeScript)
 RUN npm install
 
 # Copy source code
@@ -15,6 +15,9 @@ COPY tsconfig.json ./
 
 # Build TypeScript
 RUN npm run build
+
+# Remove dev dependencies after build
+RUN npm prune --production
 
 # Set environment variables
 ENV NODE_ENV=production

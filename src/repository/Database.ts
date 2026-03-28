@@ -1,28 +1,7 @@
 // src/repository/Database.ts
-// Singleton Insforge client with typed query builders
-// NOTE: @insforge/sdk has ESM/CJS compatibility issues in Vercel serverless
-// This module provides a graceful fallback when the SDK is unavailable
+// Singleton Insforge client using direct REST API (bypasses SDK ESM issues)
 
-// Check if we're in a Vercel serverless environment
-const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
-
-// Flag to track if SDK is available
-let sdkAvailable = false;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let insforgeSDK: any = null;
-
-// Only try to load SDK if NOT in Vercel (to avoid the ESM/CJS issue)
-if (!IS_VERCEL) {
-    try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        insforgeSDK = require('@insforge/sdk');
-        sdkAvailable = true;
-    } catch (error) {
-        console.warn('Insforge SDK not available:', error instanceof Error ? error.message : String(error));
-    }
-} else {
-    console.log('Running in Vercel environment - database SDK disabled due to ESM/CJS compatibility');
-}
+import axios, { AxiosInstance, AxiosError } from 'axios';
 
 // Generic record type
 type DatabaseRecord = Record<string, unknown>;
@@ -36,22 +15,16 @@ interface TableQueryBuilder<T extends DatabaseRecord> {
     delete(id: string): Promise<void>;
 }
 
-// Insforge query result type
-interface InsforgeResult<T> {
-    data: T[] | null;
-    error: { message: string; code?: string } | null;
-}
-
 /**
- * Database class - Singleton Insforge client
- * Provides typed query builders for all tables
+ * Database class - Singleton Insforge client using REST API
+ * Bypasses @insforge/sdk ESM/CJS compatibility issues
  */
 export class Database {
     private static instance: Database | null = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private client: any = null;
+    private httpClient: AxiosInstance | null = null;
     private baseUrl: string;
     private anonKey: string;
+    private connected: boolean = false;
 
     private constructor(baseUrl: string, anonKey: string) {
         this.baseUrl = baseUrl;
@@ -72,66 +45,65 @@ export class Database {
     }
 
     /**
-     * Initialize the Insforge client
+     * Check if database is connected
+     */
+    isConnected(): boolean {
+        return this.connected;
+    }
+
+    /**
+     * Initialize the HTTP client and test connection
      */
     async connect(): Promise<void> {
-        if (this.client) {
+        if (this.connected) {
             return;
         }
 
-        // Check if SDK is available
-        if (!sdkAvailable) {
-            throw new Error('Database SDK not available in this environment');
-        }
-
-        this.client = insforgeSDK.createClient({
-            baseUrl: this.baseUrl,
-            anonKey: this.anonKey,
+        // Create axios client with Insforge headers
+        this.httpClient = axios.create({
+            baseURL: this.baseUrl,
+            headers: {
+                'apikey': this.anonKey,
+                'Content-Type': 'application/json',
+            },
+            timeout: 30000,
         });
 
-        // Test connection by querying a simple value
-        const { error } = await this.client.database
-            .from('sites')
-            .select('id')
-            .limit(1);
-
-        if (error && !error.message.includes('0 rows')) {
-            // Ignore "no rows" error, it's expected for empty tables
-            if (!error.message.includes('relation') && !error.message.includes('does not exist')) {
-                throw new Error(`Database connection failed: ${error.message}`);
+        // Test connection by querying sites table
+        try {
+            await this.httpClient.get('/api/db/sites', {
+                params: { select: 'id', limit: 1 }
+            });
+            this.connected = true;
+            console.log('Insforge database connected via REST API');
+        } catch (error) {
+            const axiosError = error as AxiosError;
+            // 404 or empty result is OK - table might not exist yet
+            if (axiosError.response?.status === 404 || axiosError.response?.status === 200) {
+                this.connected = true;
+                console.log('Insforge database connected via REST API');
+            } else {
+                throw new Error(`Database connection failed: ${axiosError.message}`);
             }
         }
     }
 
     /**
-     * Get the Insforge client (for advanced usage)
+     * Get the HTTP client
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    getClient(): any {
-        if (!this.client) {
+    private getHttpClient(): AxiosInstance {
+        if (!this.httpClient) {
             throw new Error('Database not connected. Call connect() first.');
         }
-        return this.client;
-    }
-
-    /**
-     * Execute a raw SQL query via Insforge RPC
-     * Note: This requires a database function to be set up
-     */
-    async query<T extends DatabaseRecord = DatabaseRecord>(
-        _sql: string,
-        _values?: unknown[]
-    ): Promise<{ rows: T[] }> {
-        // For raw SQL queries, we'd need to set up an RPC function in Insforge
-        // For now, this is a placeholder - use the table query builders instead
-        throw new Error('Raw SQL queries not supported with Insforge SDK. Use table query builders.');
+        return this.httpClient;
     }
 
     /**
      * Close the database connection
      */
     async close(): Promise<void> {
-        this.client = null;
+        this.httpClient = null;
+        this.connected = false;
         Database.instance = null;
     }
 
@@ -139,9 +111,6 @@ export class Database {
     // Table Query Builders
     // ============================================
 
-    /**
-     * Sites table query builder
-     */
     sites(): TableQueryBuilder<{
         id: string;
         domain: string;
@@ -154,9 +123,6 @@ export class Database {
         return this.createQueryBuilder('sites');
     }
 
-    /**
-     * Entities table query builder
-     */
     entities(): TableQueryBuilder<{
         id: string;
         site_id: string;
@@ -169,9 +135,6 @@ export class Database {
         return this.createQueryBuilder('entities');
     }
 
-    /**
-     * Clusters table query builder
-     */
     clusters(): TableQueryBuilder<{
         id: string;
         name: string | null;
@@ -183,9 +146,6 @@ export class Database {
         return this.createQueryBuilder('clusters');
     }
 
-    /**
-     * Cluster memberships table query builder
-     */
     cluster_memberships(): TableQueryBuilder<{
         id: string;
         cluster_id: string;
@@ -199,9 +159,6 @@ export class Database {
         return this.createQueryBuilder('cluster_memberships');
     }
 
-    /**
-     * Embeddings table query builder
-     */
     embeddings(): TableQueryBuilder<{
         id: string;
         source_id: string;
@@ -213,9 +170,6 @@ export class Database {
         return this.createQueryBuilder('embeddings');
     }
 
-    /**
-     * Resolution runs table query builder
-     */
     resolution_runs(): TableQueryBuilder<{
         id: string;
         input_url: string;
@@ -232,85 +186,110 @@ export class Database {
     }
 
     /**
-     * Generic query builder factory using Insforge SDK
+     * Generic query builder factory using REST API
      */
     private createQueryBuilder<T extends DatabaseRecord>(tableName: string): TableQueryBuilder<T> {
         const db = this;
 
         return {
             async insert(data: Partial<T>): Promise<string> {
-                const client = db.getClient();
-                const result = await client.database
-                    .from(tableName)
-                    .insert(data as Record<string, unknown>)
-                    .select('id') as InsforgeResult<{ id: string }>;
-
-                if (result.error) {
-                    throw new Error(`Insert failed: ${result.error.message}`);
+                const client = db.getHttpClient();
+                try {
+                    const response = await client.post<T[]>(
+                        `/api/db/${tableName}`,
+                        data,
+                        { headers: { 'Prefer': 'return=representation' } }
+                    );
+                    
+                    if (!response.data || response.data.length === 0) {
+                        throw new Error('Insert failed: No data returned');
+                    }
+                    
+                    return response.data[0].id as string;
+                } catch (error) {
+                    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+                    const message = axiosError.response?.data?.message || 
+                                    axiosError.response?.data?.error || 
+                                    axiosError.message;
+                    throw new Error(`Insert failed: ${message}`);
                 }
-
-                if (!result.data || result.data.length === 0) {
-                    throw new Error('Insert failed: No data returned');
-                }
-
-                return result.data[0].id;
             },
 
             async findById(id: string): Promise<T | null> {
-                const client = db.getClient();
-                const result = await client.database
-                    .from(tableName)
-                    .select('*')
-                    .eq('id', id)
-                    .maybeSingle() as { data: T | null; error: { message: string } | null };
-
-                if (result.error) {
-                    throw new Error(`Find failed: ${result.error.message}`);
+                const client = db.getHttpClient();
+                try {
+                    const response = await client.get<T[]>(`/api/db/${tableName}`, {
+                        params: { select: '*', id: `eq.${id}` }
+                    });
+                    
+                    if (!response.data || response.data.length === 0) {
+                        return null;
+                    }
+                    
+                    return response.data[0];
+                } catch (error) {
+                    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+                    const message = axiosError.response?.data?.message || 
+                                    axiosError.response?.data?.error || 
+                                    axiosError.message;
+                    throw new Error(`Find failed: ${message}`);
                 }
-
-                return result.data;
             },
 
             async findAll(filters?: Partial<T>): Promise<T[]> {
-                const client = db.getClient();
-                let query = client.database.from(tableName).select('*');
-
-                if (filters && Object.keys(filters).length > 0) {
-                    for (const [key, value] of Object.entries(filters)) {
-                        query = query.eq(key, value);
+                const client = db.getHttpClient();
+                try {
+                    const params: Record<string, string> = { select: '*' };
+                    
+                    if (filters && Object.keys(filters).length > 0) {
+                        for (const [key, value] of Object.entries(filters)) {
+                            params[key] = `eq.${value}`;
+                        }
                     }
+                    
+                    const response = await client.get<T[]>(`/api/db/${tableName}`, { params });
+                    return response.data || [];
+                } catch (error) {
+                    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+                    const message = axiosError.response?.data?.message || 
+                                    axiosError.response?.data?.error || 
+                                    axiosError.message;
+                    throw new Error(`FindAll failed: ${message}`);
                 }
-
-                const result = await query as InsforgeResult<T>;
-
-                if (result.error) {
-                    throw new Error(`FindAll failed: ${result.error.message}`);
-                }
-
-                return result.data || [];
             },
 
             async update(id: string, data: Partial<T>): Promise<void> {
-                const client = db.getClient();
-                const result = await client.database
-                    .from(tableName)
-                    .update(data as Record<string, unknown>)
-                    .eq('id', id) as InsforgeResult<T>;
-
-                if (result.error) {
-                    throw new Error(`Update failed: ${result.error.message}`);
+                const client = db.getHttpClient();
+                try {
+                    await client.patch(
+                        `/api/db/${tableName}`,
+                        data,
+                        { 
+                            params: { id: `eq.${id}` },
+                            headers: { 'Prefer': 'return=representation' }
+                        }
+                    );
+                } catch (error) {
+                    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+                    const message = axiosError.response?.data?.message || 
+                                    axiosError.response?.data?.error || 
+                                    axiosError.message;
+                    throw new Error(`Update failed: ${message}`);
                 }
             },
 
             async delete(id: string): Promise<void> {
-                const client = db.getClient();
-                const result = await client.database
-                    .from(tableName)
-                    .delete()
-                    .eq('id', id) as InsforgeResult<T>;
-
-                if (result.error) {
-                    throw new Error(`Delete failed: ${result.error.message}`);
+                const client = db.getHttpClient();
+                try {
+                    await client.delete(`/api/db/${tableName}`, {
+                        params: { id: `eq.${id}` }
+                    });
+                } catch (error) {
+                    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+                    const message = axiosError.response?.data?.message || 
+                                    axiosError.response?.data?.error || 
+                                    axiosError.message;
+                    throw new Error(`Delete failed: ${message}`);
                 }
             },
         };
