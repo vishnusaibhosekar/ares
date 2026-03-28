@@ -16,7 +16,8 @@
         "includeFiles": [
           "src/**",
           "package.json"
-        ]
+        ],
+        "installCommand": "npm install --omit=optional"
       }
     }
   ],

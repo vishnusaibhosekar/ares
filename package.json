@@ -29,7 +29,6 @@
     "author": "Insforge x Qoder Hackathon",
     "license": "MIT",
     "dependencies": {
-        "@insforge/sdk": "^1.2.2",
         "axios": "^1.6.0",
         "cors": "^2.8.6",
         "dotenv": "^16.3.1",
@@ -39,6 +38,9 @@
         "pino-pretty": "^10.2.3",
         "uuid": "^9.0.1",
         "zod": "^3.22.4"
+    },
+    "optionalDependencies": {
+        "@insforge/sdk": "^1.2.2"
     },
     "devDependencies": {
         "@types/cors": "^2.8.19",
