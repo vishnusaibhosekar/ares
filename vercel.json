@@ -8,28 +8,9 @@
         "distDir": "dist",
         "installCommand": "npm install --include=dev"
       }
-    },
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "src/**",
-          "package.json"
-        ],
-        "installCommand": "npm install --omit=optional"
-      }
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/health",
-      "dest": "/api/index.ts"
-    },
     {
       "src": "/(.*)",
       "dest": "/frontend/$1"
