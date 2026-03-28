@@ -102,7 +102,7 @@ export class EntityRepository {
         value: string;
         normalized_value: string | null;
         confidence: number;
-        created_at: Date;
+        created_at: Date | string;
     }): Entity {
         return new Entity(
             record.id,
@@ -111,7 +111,7 @@ export class EntityRepository {
             record.value,
             record.normalized_value,
             record.confidence,
-            record.created_at
+            typeof record.created_at === 'string' ? new Date(record.created_at) : record.created_at
         );
     }
 }

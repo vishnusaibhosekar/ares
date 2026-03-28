@@ -6,6 +6,8 @@
 - [tsconfig.json](file://tsconfig.json)
 - [jest.config.js](file://jest.config.js)
 - [.prettierrc](file://.prettierrc)
+- [frontend/eslint.config.js](file://frontend/eslint.config.js)
+- [frontend/tsconfig.json](file://frontend/tsconfig.json)
 - [ARCHITECTURE.md](file://ARCHITECTURE.md)
 - [README.md](file://README.md)
 - [src/index.ts](file://src/index.ts)
@@ -26,7 +28,24 @@
 - [demos/curl-examples.sh](file://demos/curl-examples.sh)
 - [demos/end-to-end.ts](file://demos/end-to-end.ts)
 - [demos/sample-payloads.json](file://demos/sample-payloads.json)
+- [tests/unit/ClusterResolver.test.ts](file://tests/unit/ClusterResolver.test.ts)
+- [tests/unit/EmbeddingService.test.ts](file://tests/unit/EmbeddingService.test.ts)
+- [tests/unit/EntityExtractor.test.ts](file://tests/unit/EntityExtractor.test.ts)
+- [tests/unit/EntityNormalizer.test.ts](file://tests/unit/EntityNormalizer.test.ts)
+- [tests/unit/ResolutionEngine.test.ts](file://tests/unit/ResolutionEngine.test.ts)
+- [tests/unit/SimilarityScorer.test.ts](file://tests/unit/SimilarityScorer.test.ts)
+- [tests/integration/api.test.ts](file://tests/integration/api.test.ts)
+- [tests/integration/setup.ts](file://tests/integration/setup.ts)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added comprehensive testing infrastructure documentation covering unit and integration tests
+- Documented development tooling with ESLint, Prettier, TypeScript compilation, and npm scripts
+- Enhanced testing strategy section with Jest configuration details
+- Added frontend ESLint configuration documentation
+- Expanded development practices with linting and formatting guidelines
+- Included testing command variations and coverage reporting
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -88,11 +107,17 @@ Q["package.json"]
 R["tsconfig.json"]
 S["jest.config.js"]
 T[".prettierrc"]
+U["frontend/eslint.config.js"]
+V["frontend/tsconfig.json"]
 end
 subgraph "Demos"
-U["demos/curl-examples.sh"]
-V["demos/end-to-end.ts"]
-W["demos/sample-payloads.json"]
+W["demos/curl-examples.sh"]
+X["demos/end-to-end.ts"]
+Y["demos/sample-payloads.json"]
+end
+subgraph "Tests"
+Z["tests/unit/"]
+AA["tests/integration/"]
 end
 A --> B
 B --> C
@@ -111,6 +136,8 @@ P --> G
 Q --> R
 Q --> S
 Q --> T
+Q --> U
+Q --> V
 ```
 
 **Diagram sources**
@@ -133,6 +160,8 @@ Q --> T
 - [tsconfig.json](file://tsconfig.json)
 - [jest.config.js](file://jest.config.js)
 - [.prettierrc](file://.prettierrc)
+- [frontend/eslint.config.js](file://frontend/eslint.config.js)
+- [frontend/tsconfig.json](file://frontend/tsconfig.json)
 - [demos/curl-examples.sh](file://demos/curl-examples.sh)
 - [demos/end-to-end.ts](file://demos/end-to-end.ts)
 - [demos/sample-payloads.json](file://demos/sample-payloads.json)
@@ -376,8 +405,6 @@ Cors["CORS"] --> Express
 - Monitor request durations via structured logging and optimize slow paths.
 - Use typechecking and linting to catch performance pitfalls early.
 
-[No sources needed since this section provides general guidance]
-
 ## Troubleshooting Guide
 - Environment configuration errors: Review validation messages and ensure required variables are set correctly.
 - Database connectivity: Verify connection string and retry logic; confirm PostgreSQL and pgvector availability.
@@ -412,10 +439,28 @@ Follow these steps to contribute:
 - [src/domain/models/index.ts](file://src/domain/models/index.ts)
 
 ## Testing Strategy
+The project implements a comprehensive testing infrastructure using Jest with both unit and integration tests:
+
+### Unit Testing
 - Jest configured with ts-jest transformer, Node test environment, and coverage collection from src/**/*.ts.
-- Test discovery matches *.test.ts and *.spec.ts under tests/.
-- Coverage reporters include text, lcov, and html; test timeout set to 30 seconds.
-- Use moduleNameMapper '^@/(.*)$' to align with tsconfig paths.
+- Test discovery matches *.test.ts and *.spec.ts under tests/unit/.
+- Comprehensive service testing including ClusterResolver, EmbeddingService, EntityExtractor, EntityNormalizer, ResolutionEngine, and SimilarityScorer.
+- Mock-based testing for external dependencies like EmbeddingService and logger.
+- Coverage reporting with text, LCOV, and HTML formats.
+- Extended test timeout of 30 seconds for complex operations.
+
+### Integration Testing
+- Supertest-based API testing with in-memory database mocking.
+- Complete endpoint coverage for health checks, site ingestion, actor resolution, cluster retrieval, and seeding.
+- Mock implementations for Database, logger, EmbeddingService, and EntityExtractor.
+- Comprehensive error handling and validation testing.
+- Request ID propagation and standardized error response format verification.
+
+### Test Organization
+- Unit tests under tests/unit/ for individual service components
+- Integration tests under tests/integration/ for API endpoints and database operations
+- Shared test utilities in tests/integration/setup.ts
+- Mock factories for consistent test data generation
 
 ```mermaid
 flowchart TD
@@ -424,22 +469,55 @@ Transform --> Compile["TypeScript compile"]
 Compile --> Execute["Execute tests"]
 Execute --> Coverage["Collect coverage"]
 Coverage --> Reports["Text/LCOV/HTML reports"]
+subgraph "Test Types"
+Unit["Unit Tests<br/>Service Logic"]
+Integration["Integration Tests<br/>API Endpoints"]
+End
+Unit --> Execute
+Integration --> Execute
 ```
 
 **Diagram sources**
 - [jest.config.js](file://jest.config.js)
+- [tests/unit/ClusterResolver.test.ts](file://tests/unit/ClusterResolver.test.ts)
+- [tests/integration/api.test.ts](file://tests/integration/api.test.ts)
 
 **Section sources**
 - [jest.config.js](file://jest.config.js)
+- [tests/unit/ClusterResolver.test.ts](file://tests/unit/ClusterResolver.test.ts)
+- [tests/integration/api.test.ts](file://tests/integration/api.test.ts)
+- [tests/integration/setup.ts](file://tests/integration/setup.ts)
 
 ## Development Practices
-- Use npm scripts for development, building, testing, linting, formatting, and type checking.
-- Keep commits small and focused; reference related issues where applicable.
-- Write unit tests for new logic; add integration tests for API endpoints and repository operations.
-- Run lint and format checks locally before submitting changes.
+The project follows comprehensive development practices with integrated tooling:
+
+### npm Scripts
+- Development: `npm run dev` - Hot-reloading TypeScript development server
+- Build: `npm run build` - TypeScript compilation to dist/
+- Production: `npm run start` - Node.js runtime execution
+- Testing: `npm run test` - Full test suite execution
+- Testing variants: `npm run test:unit`, `npm run test:integration`, `npm run test:watch`
+- Database: `npm run db:migrate`, `npm run db:seed`
+- Demo: `npm run demo` - End-to-end demonstration script
+- Code quality: `npm run lint`, `npm run lint:fix`, `npm run format`, `npm run typecheck`
+
+### Code Quality Tools
+- **ESLint**: TypeScript-aware linting with React Hooks and React Refresh plugins
+- **Prettier**: Consistent code formatting with semicolons, trailing commas, single quotes
+- **TypeScript**: Strict compilation with comprehensive type checking
+- **Frontend ESLint**: Separate configuration for React/TypeScript frontend components
+
+### Development Workflow
+- Use npm scripts for all development tasks
+- Keep commits small and focused; reference related issues where applicable
+- Write unit tests for new logic; add integration tests for API endpoints and repository operations
+- Run lint and format checks locally before submitting changes
+- Maintain consistent error handling and logging patterns
 
 **Section sources**
 - [package.json](file://package.json)
+- [frontend/eslint.config.js](file://frontend/eslint.config.js)
+- [frontend/tsconfig.json](file://frontend/tsconfig.json)
 - [README.md](file://README.md)
 
 ## Adding New Features
@@ -517,4 +595,4 @@ Coverage --> Reports["Text/LCOV/HTML reports"]
 - [src/api/server.ts](file://src/api/server.ts)
 
 ## Conclusion
-This guide consolidates the essential practices and workflows for contributing to ARES. By following the development practices, testing strategy, and architectural patterns outlined here, contributors can efficiently extend the system while maintaining code quality and reliability.
+This guide consolidates the essential practices and workflows for contributing to ARES. By following the development practices, testing strategy, and architectural patterns outlined here, contributors can efficiently extend the system while maintaining code quality and reliability. The comprehensive testing infrastructure, development tooling, and clear contribution guidelines provide a solid foundation for ongoing development and maintenance of the ARES platform.

@@ -17,15 +17,15 @@ async function main(): Promise<void> {
 
     // Initialize database connection
     let dbConnected = false;
-    if (env.DATABASE_URL) {
+    if (env.INSFORGE_BASE_URL && env.INSFORGE_ANON_KEY) {
         try {
-            logger.info('Connecting to database...');
-            const db = Database.getInstance(env.DATABASE_URL);
+            logger.info('Connecting to Insforge database...');
+            const db = Database.getInstance(env.INSFORGE_BASE_URL, env.INSFORGE_ANON_KEY);
             await db.connect();
             dbConnected = true;
-            logger.info('Database connection established');
+            logger.info('Insforge database connection established');
         } catch (error) {
-            logger.error({ error }, 'Failed to connect to database');
+            logger.error({ error }, 'Failed to connect to Insforge database');
             // In development, continue without database
             if (env.NODE_ENV === 'production') {
                 logger.fatal('Cannot start in production without database connection');
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
             logger.warn('Continuing without database connection (development mode)');
         }
     } else {
-        logger.warn('DATABASE_URL not set, running without database');
+        logger.warn('INSFORGE_BASE_URL or INSFORGE_ANON_KEY not set, running without database');
     }
 
     // Create Express application

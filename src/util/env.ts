@@ -15,7 +15,8 @@ type NodeEnv = 'development' | 'production' | 'test';
  * Application configuration interface
  */
 export interface EnvConfig {
-    DATABASE_URL: string;
+    INSFORGE_BASE_URL: string;
+    INSFORGE_ANON_KEY: string;
     MIXEDBREAD_API_KEY: string;
     NODE_ENV: NodeEnv;
     PORT: number;
@@ -26,7 +27,7 @@ export interface EnvConfig {
 /**
  * Required environment variables
  */
-const REQUIRED_VARS = ['DATABASE_URL'] as const;
+const REQUIRED_VARS = ['INSFORGE_BASE_URL', 'INSFORGE_ANON_KEY'] as const;
 
 /**
  * Validate and parse environment variables
@@ -69,7 +70,8 @@ function validateEnv(): EnvConfig {
     }
 
     return {
-        DATABASE_URL: process.env.DATABASE_URL || '',
+        INSFORGE_BASE_URL: process.env.INSFORGE_BASE_URL || '',
+        INSFORGE_ANON_KEY: process.env.INSFORGE_ANON_KEY || '',
         MIXEDBREAD_API_KEY: process.env.MIXEDBREAD_API_KEY || '',
         NODE_ENV: nodeEnv as NodeEnv,
         PORT: port,
@@ -109,7 +111,8 @@ export function isTest(): boolean {
  */
 export function getSafeConfig(): Record<string, string> {
     return {
-        DATABASE_URL: env.DATABASE_URL ? '[SET]' : '[NOT SET]',
+        INSFORGE_BASE_URL: env.INSFORGE_BASE_URL ? '[SET]' : '[NOT SET]',
+        INSFORGE_ANON_KEY: env.INSFORGE_ANON_KEY ? '[SET]' : '[NOT SET]',
         MIXEDBREAD_API_KEY: env.MIXEDBREAD_API_KEY ? '[SET]' : '[NOT SET]',
         NODE_ENV: env.NODE_ENV,
         PORT: String(env.PORT),

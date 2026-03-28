@@ -85,16 +85,16 @@ export class ClusterRepository {
         name: string | null;
         confidence: number;
         description: string | null;
-        created_at: Date;
-        updated_at: Date;
+        created_at: Date | string;
+        updated_at: Date | string;
     }): Cluster {
         return new Cluster(
             record.id,
             record.name,
             record.confidence,
             record.description,
-            record.created_at,
-            record.updated_at
+            typeof record.created_at === 'string' ? new Date(record.created_at) : record.created_at,
+            typeof record.updated_at === 'string' ? new Date(record.updated_at) : record.updated_at
         );
     }
 }
