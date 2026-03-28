@@ -93,8 +93,8 @@ export class SiteRepository {
         url: string;
         page_text: string | null;
         screenshot_hash: string | null;
-        first_seen_at: Date;
-        created_at: Date;
+        first_seen_at: Date | string;
+        created_at: Date | string;
     }): Site {
         return new Site(
             record.id,
@@ -102,8 +102,8 @@ export class SiteRepository {
             record.url,
             record.page_text,
             record.screenshot_hash,
-            record.first_seen_at,
-            record.created_at
+            typeof record.first_seen_at === 'string' ? new Date(record.first_seen_at) : record.first_seen_at,
+            typeof record.created_at === 'string' ? new Date(record.created_at) : record.created_at
         );
     }
 }
