@@ -25,25 +25,28 @@ export interface EnvConfig {
 }
 
 /**
- * Required environment variables
+ * Required environment variables (only in development)
+ * In production, database config is optional since we may run without @insforge/sdk
  */
-const REQUIRED_VARS = ['INSFORGE_BASE_URL', 'INSFORGE_ANON_KEY'] as const;
+const REQUIRED_VARS_DEV = ['INSFORGE_BASE_URL', 'INSFORGE_ANON_KEY'] as const;
 
 /**
  * Validate and parse environment variables
  */
 function validateEnv(): EnvConfig {
     const errors: string[] = [];
+    const nodeEnv = process.env.NODE_ENV || 'development';
 
-    // Check required variables
-    for (const varName of REQUIRED_VARS) {
-        if (!process.env[varName]) {
-            errors.push(`Missing required environment variable: ${varName}`);
+    // Check required variables (only in development)
+    if (nodeEnv === 'development') {
+        for (const varName of REQUIRED_VARS_DEV) {
+            if (!process.env[varName]) {
+                errors.push(`Missing required environment variable: ${varName}`);
+            }
         }
     }
 
     // Validate NODE_ENV
-    const nodeEnv = process.env.NODE_ENV || 'development';
     if (!['development', 'production', 'test'].includes(nodeEnv)) {
         errors.push(`Invalid NODE_ENV: ${nodeEnv}. Must be 'development', 'production', or 'test'`);
     }

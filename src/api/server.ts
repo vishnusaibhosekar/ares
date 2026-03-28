@@ -71,12 +71,12 @@ export function createApp(): Application {
     // ============================================
     // Static Files (Frontend)
     // ============================================
-    
+
     // Serve frontend static files in production
     if (process.env.NODE_ENV === 'production') {
         const frontendPath = path.join(__dirname, '../../frontend/dist');
         app.use(express.static(frontendPath));
-        
+
         // SPA fallback - serve index.html for all non-API routes
         app.get('*', (req: Request, res: Response) => {
             // Don't serve index.html for API routes

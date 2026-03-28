@@ -15,7 +15,7 @@ async function main(): Promise<void> {
     // Log configuration (safe values only)
     logger.info({ config: getSafeConfig() }, 'Configuration loaded');
 
-    // Initialize database connection
+    // Initialize database connection (optional in production without SDK)
     let dbConnected = false;
     if (env.INSFORGE_BASE_URL && env.INSFORGE_ANON_KEY) {
         try {
@@ -26,12 +26,7 @@ async function main(): Promise<void> {
             logger.info('Insforge database connection established');
         } catch (error) {
             logger.error({ error }, 'Failed to connect to Insforge database');
-            // In development, continue without database
-            if (env.NODE_ENV === 'production') {
-                logger.fatal('Cannot start in production without database connection');
-                process.exit(1);
-            }
-            logger.warn('Continuing without database connection (development mode)');
+            logger.warn('Continuing without database connection');
         }
     } else {
         logger.warn('INSFORGE_BASE_URL or INSFORGE_ANON_KEY not set, running without database');

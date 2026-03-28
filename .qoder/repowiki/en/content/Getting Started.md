@@ -28,15 +28,15 @@
 - [frontend/src/pages/IngestSite.tsx](file://frontend/src/pages/IngestSite.tsx)
 - [frontend/tailwind.config.js](file://frontend/tailwind.config.js)
 - [frontend/tsconfig.app.json](file://frontend/tsconfig.app.json)
+- [vercel.json](file://vercel.json)
 </cite>
 
 ## Update Summary
 **Changes Made**
-- Added comprehensive frontend setup instructions for React/Vite development
-- Included detailed installation steps for both backend and frontend components
-- Added demo scripts section with end-to-end TypeScript demo
-- Enhanced troubleshooting guide with frontend-specific issues
-- Updated environment configuration to include frontend proxy settings
+- Updated installation procedures to account for @insforge/sdk moved to optionalDependencies
+- Added Vercel serverless compatibility considerations and environment variable configuration
+- Enhanced troubleshooting guide with SDK loading issues and optional dependency handling
+- Updated environment configuration to include Insforge database credentials
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -84,6 +84,8 @@ Install the main application dependencies:
 npm install
 ```
 
+**Updated** The @insforge/sdk is now configured as an optional dependency to address Vercel serverless compatibility issues. During installation, npm will attempt to install the SDK but won't fail if it's unavailable.
+
 ### 3. Frontend Dependencies
 Navigate to the frontend directory and install React/Vite dependencies:
 ```bash
@@ -99,6 +101,7 @@ cd ..
 **Section sources**
 - [README.md:25-46](file://README.md#L25-L46)
 - [frontend/package.json:6-11](file://frontend/package.json#L6-L11)
+- [package.json:42-44](file://package.json#L42-L44)
 
 ## Environment Configuration
 
@@ -114,6 +117,8 @@ Set the following in your `.env` file:
 **Database Configuration**
 ```env
 DATABASE_URL=postgresql://username:password@localhost:5432/ares_db
+INSFORGE_BASE_URL=https://your-project.insforce.app
+INSFORGE_ANON_KEY=your_anon_key_here
 ```
 
 **API Configuration**
@@ -125,15 +130,19 @@ LOG_LEVEL=info
 CORS_ORIGIN=http://localhost:5173
 ```
 
-### Frontend Proxy Configuration
-The frontend Vite configuration automatically proxies API requests to the backend:
-- Frontend runs on `http://localhost:5173`
-- Backend API is proxied from `/api` and `/health` endpoints
-- Automatic origin change enabled for cross-origin requests
+### Vercel Serverless Compatibility
+**Updated** For Vercel deployments, the application uses a special installation command that omits optional dependencies:
+
+```json
+"installCommand": "npm install --omit=optional"
+```
+
+This ensures the application deploys successfully even when the @insforge/sdk is unavailable in the serverless environment.
 
 **Section sources**
 - [src/util/env.ts:17-84](file://src/util/env.ts#L17-L84)
-- [frontend/vite.config.ts:7-19](file://frontend/vite.config.ts#L7-L19)
+- [src/repository/Database.ts:1-25](file://src/repository/Database.ts#L1-L25)
+- [vercel.json:20](file://vercel.json#L20)
 
 ## Database Setup
 
@@ -317,6 +326,8 @@ psql $DATABASE_URL
 ### Environment Variable Problems
 **Missing Required Variables:**
 - DATABASE_URL: Complete PostgreSQL connection string
+- INSFORGE_BASE_URL: Insforge database base URL
+- INSFORGE_ANON_KEY: Insforge anonymous API key
 - MIXEDBREAD_API_KEY: Valid API key for embedding services
 
 **Validation Errors:**
@@ -334,6 +345,17 @@ psql $DATABASE_URL
 - Review migration logs for specific errors
 - Ensure pgvector extension is installed
 - Check database permissions
+
+### Optional Dependency Issues
+**Updated** @insforge/sdk Loading Problems:
+- The SDK is now optional and may not be available in all environments
+- In Vercel serverless environments, the SDK is intentionally disabled
+- The application gracefully handles missing SDK dependencies
+
+**Vercel Deployment Issues:**
+- Vercel uses `--omit=optional` flag to skip optional dependencies
+- This prevents deployment failures when @insforge/sdk is unavailable
+- The application continues to function without the SDK in serverless environments
 
 ### Frontend Development Issues
 **Port Conflicts (5173):**
@@ -370,6 +392,11 @@ PORT=3001
 - Check rate limit quotas
 - Ensure embedding service is accessible
 
+**Insforge Database Issues:**
+- Verify INSFORGE_BASE_URL points to correct Insforge project
+- Ensure INSFORGE_ANON_KEY is valid for the specified project
+- Check that the Insforge project has the required tables
+
 ### Network and CORS Issues
 **Cross-Origin Problems:**
 - Backend CORS_ORIGIN must match frontend URL
@@ -380,6 +407,8 @@ PORT=3001
 - [src/util/env.ts:29-54](file://src/util/env.ts#L29-L54)
 - [frontend/vite.config.ts:7-19](file://frontend/vite.config.ts#L7-L19)
 - [db/run-migrations.ts:84-94](file://db/run-migrations.ts#L84-L94)
+- [src/repository/Database.ts:1-25](file://src/repository/Database.ts#L1-L25)
+- [vercel.json:20](file://vercel.json#L20)
 
 ### Common Issues and Solutions
 
@@ -408,7 +437,19 @@ PORT=3001
 - Check for proper JSX syntax
 - Ensure TypeScript types are correctly defined
 
+**Issue: @insforge/sdk not available warnings**
+- Solution: This is expected in Vercel serverless environments
+- The application continues to function without the SDK
+- The SDK is only required for local development and non-serverless deployments
+
+**Issue: Vercel deployment fails with optional dependency errors**
+- Solution: Vercel automatically uses `--omit=optional` flag
+- No manual intervention needed for deployment
+- The application will deploy successfully without the SDK
+
 **Section sources**
 - [frontend/src/lib/api.ts:42-49](file://frontend/src/lib/api.ts#L42-L49)
 - [frontend/src/hooks/useApi.ts:45-63](file://frontend/src/hooks/useApi.ts#L45-L63)
 - [db/migrations/001_init_schema.sql:5-7](file://db/migrations/001_init_schema.sql#L5-L7)
+- [src/repository/Database.ts:1-25](file://src/repository/Database.ts#L1-L25)
+- [vercel.json:20](file://vercel.json#L20)

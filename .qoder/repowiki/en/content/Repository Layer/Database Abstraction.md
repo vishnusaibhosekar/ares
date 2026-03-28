@@ -16,6 +16,14 @@
 - [package.json](file://package.json)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated Database singleton to support graceful fallback mechanism for @insforge/sdk
+- Added Vercel serverless environment detection and conditional loading
+- Enhanced ESM/CJS compatibility handling for serverless deployments
+- Updated connection lifecycle management to handle SDK availability
+- Modified error handling to account for environment-specific constraints
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -29,17 +37,16 @@
 10. [Appendices](#appendices)
 
 ## Introduction
-This document describes the Database singleton abstraction that provides PostgreSQL connection pooling and typed query builders for the ARES project. It covers:
-- Singleton pattern implementation and connection lifecycle
-- Connection pooling configuration, pool size limits, and timeouts
-- Retry mechanism for transient database errors with exponential backoff
-- Transaction management with BEGIN/COMMIT/ROLLBACK and error handling
-- Generic TableQueryBuilder interface and per-table implementations
-- Raw SQL execution with parameter binding and error propagation
-- Integration patterns with repository components and graceful shutdown
+This document describes the Database singleton abstraction that provides Insforge database connectivity with PostgreSQL-compatible query builders for the ARES project. It covers:
+- Singleton pattern implementation with environment-aware SDK loading
+- Vercel serverless compatibility and ESM/CJS compatibility handling
+- Connection management with graceful fallback mechanisms
+- Typed query builders for database operations
+- Environment-driven configuration and graceful shutdown integration
+- Integration patterns with repository components and deployment considerations
 
 ## Project Structure
-The database abstraction lives under the repository layer and integrates with environment configuration, repositories, and the application entry point.
+The database abstraction now includes environment detection and conditional SDK loading to support Vercel serverless deployments while maintaining backward compatibility for traditional Node.js environments.
 
 ```mermaid
 graph TB
@@ -62,6 +69,10 @@ subgraph "DB Tools"
 MIG["db/run-migrations.ts"]
 SEED["db/seed.ts"]
 end
+subgraph "Environment Detection"
+VERCEL["Vercel Environment Detection"]
+SDK["@insforge/sdk Conditional Loading"]
+end
 IDX --> DB
 IDX --> ENV
 SRV --> IDX
@@ -70,57 +81,62 @@ ERepo --> DB
 CRepo --> DB
 EmbRepo --> DB
 RRRepo --> DB
+DB --> VERCEL
+DB --> SDK
 MIG --> ENV
 SEED --> ENV
 ```
 
 **Diagram sources**
 - [index.ts:12-107](file://src/index.ts#L12-L107)
-- [Database.ts:28-315](file://src/repository/Database.ts#L28-L315)
-- [env.ts:17-84](file://src/util/env.ts#L17-L84)
-- [SiteRepository.ts:10-98](file://src/repository/SiteRepository.ts#L10-L98)
-- [EntityRepository.ts:10-103](file://src/repository/EntityRepository.ts#L10-L103)
-- [ClusterRepository.ts:10-92](file://src/repository/ClusterRepository.ts#L10-L92)
-- [EmbeddingRepository.ts:10-106](file://src/repository/EmbeddingRepository.ts#L10-L106)
+- [Database.ts:28-326](file://src/repository/Database.ts#L28-L326)
+- [env.ts:17-125](file://src/util/env.ts#L17-L125)
+- [SiteRepository.ts:10-112](file://src/repository/SiteRepository.ts#L10-L112)
+- [EntityRepository.ts:10-120](file://src/repository/EntityRepository.ts#L10-L120)
+- [ClusterRepository.ts:10-103](file://src/repository/ClusterRepository.ts#L10-L103)
+- [EmbeddingRepository.ts:10-118](file://src/repository/EmbeddingRepository.ts#L10-L118)
 - [ResolutionRunRepository.ts:10-97](file://src/repository/ResolutionRunRepository.ts#L10-L97)
 - [run-migrations.ts:24-131](file://db/run-migrations.ts#L24-L131)
 - [seed.ts:20-66](file://db/seed.ts#L20-L66)
 
 **Section sources**
 - [index.ts:12-107](file://src/index.ts#L12-L107)
-- [Database.ts:28-315](file://src/repository/Database.ts#L28-L315)
-- [env.ts:17-84](file://src/util/env.ts#L17-L84)
+- [Database.ts:28-326](file://src/repository/Database.ts#L28-L326)
+- [env.ts:17-125](file://src/util/env.ts#L17-L125)
 
 ## Core Components
-- Database singleton with connection pooling and typed query builders
-- Per-table TableQueryBuilder implementations
-- Transaction wrapper for BEGIN/COMMIT/ROLLBACK
-- Environment-driven configuration and graceful shutdown integration
+- Database singleton with environment-aware SDK loading and typed query builders
+- Per-table TableQueryBuilder implementations with Insforge-compatible operations
+- Environment detection for Vercel serverless compatibility
+- Graceful fallback mechanism for SDK availability
+- Integration patterns with repository components and deployment considerations
 
 Key responsibilities:
-- Centralize PostgreSQL connectivity and pooling
-- Provide a generic, typed query builder per table
-- Encapsulate retry logic for transient errors
-- Manage transactions safely with automatic rollback on failure
-- Expose convenience methods for repository integration
+- Detect Vercel serverless environment and conditionally load SDK
+- Provide a generic, typed query builder per table with Insforge compatibility
+- Handle ESM/CJS compatibility issues in serverless deployments
+- Manage database connectivity with graceful fallback mechanisms
+- Expose convenience methods for repository integration with environment awareness
 
 **Section sources**
-- [Database.ts:28-315](file://src/repository/Database.ts#L28-L315)
+- [Database.ts:28-326](file://src/repository/Database.ts#L28-L326)
 
 ## Architecture Overview
-The Database singleton is a central component accessed by repositories. The application initializes the database during startup and closes it gracefully on shutdown. Repositories depend on the Database singleton to perform CRUD operations against typed tables.
+The Database singleton now includes environment detection and conditional SDK loading to support Vercel serverless deployments. The application initializes the database during startup with environment-aware configuration and closes it gracefully on shutdown. Repositories depend on the Database singleton to perform CRUD operations against typed tables with Insforge-compatible operations.
 
 ```mermaid
 classDiagram
 class Database {
 -static instance : Database
--pool : Pool
--config : DatabaseConfig
-+getInstance(connectionString) Database
+-client : any
+-baseUrl : string
+-anonKey : string
+-sdkAvailable : boolean
+-IS_VERCEL : boolean
++getInstance(baseUrl, anonKey) Database
 +connect() Promise~void~
-+getPool() Pool
++getClient() any
 +query(sql, values) Promise~QueryResult~
-+transaction(callback) Promise~T~
 +close() Promise~void~
 +sites() TableQueryBuilder
 +entities() TableQueryBuilder
@@ -151,115 +167,86 @@ Database --> TableQueryBuilder : "returns"
 ```
 
 **Diagram sources**
-- [Database.ts:28-315](file://src/repository/Database.ts#L28-L315)
-- [SiteRepository.ts:10-98](file://src/repository/SiteRepository.ts#L10-L98)
-- [EntityRepository.ts:10-103](file://src/repository/EntityRepository.ts#L10-L103)
-- [ClusterRepository.ts:10-92](file://src/repository/ClusterRepository.ts#L10-L92)
-- [EmbeddingRepository.ts:10-106](file://src/repository/EmbeddingRepository.ts#L10-L106)
+- [Database.ts:28-326](file://src/repository/Database.ts#L28-L326)
+- [SiteRepository.ts:10-112](file://src/repository/SiteRepository.ts#L10-L112)
+- [EntityRepository.ts:10-120](file://src/repository/EntityRepository.ts#L10-L120)
+- [ClusterRepository.ts:10-103](file://src/repository/ClusterRepository.ts#L10-L103)
+- [EmbeddingRepository.ts:10-118](file://src/repository/EmbeddingRepository.ts#L10-L118)
 - [ResolutionRunRepository.ts:10-97](file://src/repository/ResolutionRunRepository.ts#L10-L97)
 
 ## Detailed Component Analysis
 
-### Database Singleton and Connection Pooling
-- Singleton pattern ensures a single connection pool per process.
-- Connection pool is configured with:
-  - Max connections: default 10
-  - Idle timeout: 30 seconds
-  - Connection timeout: 10 seconds
-- Initialization requires a connection string; otherwise, instantiation throws an error.
-- A connectivity test is performed by acquiring and releasing a pooled client after pool creation.
-- Graceful shutdown ends the pool and clears the singleton instance.
+### Environment-Aware Database Singleton and SDK Loading
+- Singleton pattern ensures a single database client per process with environment detection.
+- Vercel serverless environment detection using `process.env.VERCEL` and `process.env.VERCEL_ENV`.
+- Conditional SDK loading to avoid ESM/CJS compatibility issues in Vercel serverless:
+  - SDK is loaded only when NOT in Vercel environment
+  - In Vercel environments, SDK loading is skipped with a warning log
+  - SDK availability flag tracks whether the client can be initialized
+- Connection requires both base URL and anonymous key; otherwise, instantiation throws an error.
+- Graceful fallback when SDK is unavailable in serverless environments.
 
 Operational notes:
-- Accessing the pool before connecting throws an error.
-- The singleton getter accepts an optional connection string; if omitted, it returns the existing instance.
+- Accessing the client before connecting throws an error.
+- The singleton getter accepts optional base URL and anonymous key; if omitted, it returns the existing instance.
+- SDK loading failures are caught and logged as warnings.
+
+**Updated** Added environment detection and conditional SDK loading for Vercel serverless compatibility
 
 **Section sources**
-- [Database.ts:28-81](file://src/repository/Database.ts#L28-L81)
-- [Database.ts:56-71](file://src/repository/Database.ts#L56-L71)
-- [Database.ts:142-148](file://src/repository/Database.ts#L142-L148)
+- [Database.ts:6-25](file://src/repository/Database.ts#L6-L25)
+- [Database.ts:49-72](file://src/repository/Database.ts#L49-L72)
+- [Database.ts:77-104](file://src/repository/Database.ts#L77-L104)
 
-### Retry Mechanism for Transient Errors
-- The raw query method retries on transient PostgreSQL error codes:
-  - 57P01: admin shutdown
-  - 08006: connection failure
-  - 08003: connection does not exist
-- Retries follow exponential backoff: 1s, 2s, 3s delays between attempts.
-- On exhaustion, the last error is rethrown.
+### Connection Management with Environment Awareness
+- The connect method:
+  - Checks if SDK is available before attempting initialization
+  - Throws error if SDK is not available in the current environment
+  - Initializes Insforge client with base URL and anonymous key
+  - Tests connection by querying a simple table structure
+  - Handles database connectivity errors appropriately
+- Environment-specific behavior:
+  - In Vercel environments, SDK loading is disabled to prevent ESM/CJS issues
+  - In non-Vercel environments, SDK is loaded normally
+  - Graceful degradation when SDK is unavailable
 
 ```mermaid
 flowchart TD
-Start(["Call query(sql, values)"]) --> CheckPool["Ensure pool exists"]
-CheckPool --> TryExec["Attempt pool.query(sql, values)"]
-TryExec --> Success{"Success?"}
-Success --> |Yes| ReturnRes["Return QueryResult"]
-Success --> |No| ExtractCode["Extract error.code"]
-ExtractCode --> IsTransient{"Is transient code?"}
-IsTransient --> |No| ThrowErr["Throw original error"]
-IsTransient --> |Yes| HasRetries{"Retries left?"}
-HasRetries --> |No| ThrowLast["Throw last error"]
-HasRetries --> |Yes| Backoff["Delay 1s/2s/3s"]
-Backoff --> TryExec
+Start(["Call connect()"]) --> CheckSDK["Check sdkAvailable flag"]
+CheckSDK --> SDKAvailable{"SDK Available?"}
+SDKAvailable --> |No| ThrowError["Throw 'Database SDK not available' error"]
+SDKAvailable --> |Yes| InitClient["Initialize Insforge client"]
+InitClient --> TestConn["Test connection with simple query"]
+TestConn --> ConnSuccess{"Connection Success?"}
+ConnSuccess --> |Yes| ReturnOK["Return success"]
+ConnSuccess --> |No| CheckError["Check error type"]
+CheckError --> IsExpected{"Is expected error?"}
+IsExpected --> |Yes| ReturnOK["Return success (ignore expected errors)"]
+IsExpected --> |No| ThrowConnErr["Throw connection error"]
 ```
 
 **Diagram sources**
-- [Database.ts:86-115](file://src/repository/Database.ts#L86-L115)
+- [Database.ts:77-104](file://src/repository/Database.ts#L77-L104)
 
 **Section sources**
-- [Database.ts:86-115](file://src/repository/Database.ts#L86-L115)
+- [Database.ts:77-104](file://src/repository/Database.ts#L77-L104)
 
-### Transaction Management
-- The transaction method:
-  - Acquires a client from the pool
-  - Executes BEGIN
-  - Invokes the provided callback with the client
-  - On success, executes COMMIT and returns the callback result
-  - On error, executes ROLLBACK and rethrows
-  - Ensures the client is released in a finally block
-
-```mermaid
-sequenceDiagram
-participant Repo as "Repository"
-participant DB as "Database"
-participant Pool as "pg.Pool"
-participant Client as "PoolClient"
-Repo->>DB : transaction(callback)
-DB->>Pool : connect()
-Pool-->>DB : Client
-DB->>Client : query("BEGIN")
-DB->>DB : callback(Client)
-alt success
-DB->>Client : query("COMMIT")
-DB-->>Repo : result
-else error
-DB->>Client : query("ROLLBACK")
-DB-->>Repo : throw error
-end
-DB->>Client : release()
-```
-
-**Diagram sources**
-- [Database.ts:120-137](file://src/repository/Database.ts#L120-L137)
-
-**Section sources**
-- [Database.ts:120-137](file://src/repository/Database.ts#L120-L137)
-
-### Generic TableQueryBuilder Interface and Implementations
-- Interface defines insert, findById, findAll, update, delete.
-- Each table exposes a typed builder:
-  - sites
-  - entities
-  - clusters
-  - cluster_memberships
-  - embeddings
-  - resolution_runs
-- The generic factory builds SQL dynamically:
+### Typed Query Builder Interface and Implementations
+- Interface defines insert, findById, findAll, update, delete operations.
+- Each table exposes a typed builder with Insforge-compatible operations:
+  - sites with domain, url, page_text, screenshot_hash, timestamps
+  - entities with site_id, type, value, normalized_value, confidence
+  - clusters with name, confidence, description, timestamps
+  - cluster_memberships with cluster_id, entity_id, site_id, membership_type, confidence
+  - embeddings with source_id, source_type, source_text, vector arrays
+  - resolution_runs with input_url, input_domain, input_entities, results
+- The generic factory builds Insforge-compatible SQL dynamically:
   - INSERT with RETURNING id
-  - SELECT by id
-  - SELECT with optional filters (AND conditions)
+  - SELECT by id with maybeSingle()
+  - SELECT with optional filters (AND conditions using eq())
   - UPDATE with WHERE id
   - DELETE by id
-- Parameter binding uses positional placeholders ($1, $2, ...).
+- Error handling for Insforge SDK responses with proper error propagation
 
 ```mermaid
 classDiagram
@@ -282,112 +269,119 @@ Database --> TableQueryBuilder : "returns typed builders"
 ```
 
 **Diagram sources**
-- [Database.ts:15-306](file://src/repository/Database.ts#L15-L306)
+- [Database.ts:30-37](file://src/repository/Database.ts#L30-L37)
+- [Database.ts:145-232](file://src/repository/Database.ts#L145-L232)
 
 **Section sources**
-- [Database.ts:15-306](file://src/repository/Database.ts#L15-L306)
+- [Database.ts:30-37](file://src/repository/Database.ts#L30-L37)
+- [Database.ts:145-232](file://src/repository/Database.ts#L145-L232)
 
 ### Raw SQL Execution and Parameter Binding
 - The query method:
-  - Validates pool presence
-  - Executes SQL with values array
-  - Applies retry logic for transient errors
-  - Propagates non-transient errors immediately
+  - Currently throws an error indicating raw SQL queries are not supported
+  - Requires setting up RPC functions in Insforge for raw SQL execution
+  - Uses table query builders instead for all database operations
+- Repository usage patterns:
+  - Repositories call db.<table>().insert/update/find/delete
+  - Under the hood, these delegate to Insforge SDK with prepared operations and bound values
 
-Usage patterns:
-- Repositories call db.<table>().insert/update/find/delete
-- Under the hood, these delegate to db.query with prepared SQL and bound values
+**Updated** Raw SQL queries are not supported with current implementation
 
 **Section sources**
-- [Database.ts:86-115](file://src/repository/Database.ts#L86-L115)
-- [SiteRepository.ts:20-32](file://src/repository/SiteRepository.ts#L20-L32)
-- [EntityRepository.ts:20-29](file://src/repository/EntityRepository.ts#L20-L29)
-- [ClusterRepository.ts:20-33](file://src/repository/ClusterRepository.ts#L20-L33)
-- [EmbeddingRepository.ts:20-41](file://src/repository/EmbeddingRepository.ts#L20-L41)
-- [ResolutionRunRepository.ts:20-32](file://src/repository/ResolutionRunRepository.ts#L20-L32)
+- [Database.ts:121-128](file://src/repository/Database.ts#L121-L128)
+- [SiteRepository.ts:31-39](file://src/repository/SiteRepository.ts#L31-L39)
+- [EntityRepository.ts:31-39](file://src/repository/EntityRepository.ts#L31-L39)
+- [ClusterRepository.ts:29-37](file://src/repository/ClusterRepository.ts#L29-L37)
+- [EmbeddingRepository.ts:30-46](file://src/repository/EmbeddingRepository.ts#L30-L46)
+- [ResolutionRunRepository.ts:10-97](file://src/repository/ResolutionRunRepository.ts#L10-L97)
 
 ### Connection Lifecycle Management and Integration
 - Initialization:
-  - Application loads environment variables
-  - Creates Database singleton with DATABASE_URL
-  - Calls connect() to initialize the pool and test connectivity
+  - Application loads environment variables including Insforge credentials
+  - Creates Database singleton with INSFORGE_BASE_URL and INSFORGE_ANON_KEY
+  - Calls connect() to initialize the client and test connectivity
+  - Handles SDK availability with graceful fallback in serverless environments
 - Shutdown:
-  - On SIGTERM/SIGINT, the server closes and calls db.close() to end the pool
+  - On SIGTERM/SIGINT, the server closes and calls db.close() to reset client state
 - Development mode:
-  - If DATABASE_URL is missing, the app continues without DB in development
-  - In production, startup fails fast if DB is unavailable
+  - If Insforge credentials are missing, the app continues without database
+  - In production, startup fails fast if database is unavailable
 
 ```mermaid
 sequenceDiagram
 participant App as "Application"
 participant Env as "env.ts"
 participant DB as "Database"
-participant Pool as "pg.Pool"
-App->>Env : load DATABASE_URL
-App->>DB : getInstance(DATABASE_URL)
+participant SDK as "@insforge/sdk"
+App->>Env : load INSFORGE_BASE_URL, INSFORGE_ANON_KEY
+App->>DB : getInstance(BASE_URL, ANON_KEY)
 App->>DB : connect()
-DB->>Pool : new Pool(config)
-DB->>Pool : connect()
-Pool-->>DB : client
-DB->>client : release()
+DB->>DB : Check Vercel environment
+DB->>SDK : Load SDK (if not Vercel)
+DB->>DB : Initialize client
+DB->>DB : Test connection
 Note over App,DB : Runtime usage...
 App->>DB : close() on shutdown
-DB->>Pool : end()
+DB->>DB : Reset client and instance
 ```
 
 **Diagram sources**
 - [index.ts:18-38](file://src/index.ts#L18-L38)
-- [index.ts:71-80](file://src/index.ts#L71-L80)
-- [env.ts:17-84](file://src/util/env.ts#L17-L84)
-- [Database.ts:56-71](file://src/repository/Database.ts#L56-L71)
-- [Database.ts:142-148](file://src/repository/Database.ts#L142-L148)
+- [index.ts:62-89](file://src/index.ts#L62-L89)
+- [env.ts:17-84](file://src/util/env.ts#L17-L125)
+- [Database.ts:64-72](file://src/repository/Database.ts#L64-L72)
+- [Database.ts:77-104](file://src/repository/Database.ts#L77-L104)
+- [Database.ts:133-136](file://src/repository/Database.ts#L133-L136)
 
 **Section sources**
 - [index.ts:18-38](file://src/index.ts#L18-L38)
-- [index.ts:71-80](file://src/index.ts#L71-L80)
-- [env.ts:17-84](file://src/util/env.ts#L17-L84)
-- [Database.ts:56-71](file://src/repository/Database.ts#L56-L71)
-- [Database.ts:142-148](file://src/repository/Database.ts#L142-L148)
+- [index.ts:62-89](file://src/index.ts#L62-L89)
+- [env.ts:17-125](file://src/util/env.ts#L17-L125)
+- [Database.ts:64-72](file://src/repository/Database.ts#L64-L72)
+- [Database.ts:77-104](file://src/repository/Database.ts#L77-L104)
+- [Database.ts:133-136](file://src/repository/Database.ts#L133-L136)
 
 ### Example Usage Patterns
 - Connection initialization:
-  - Load DATABASE_URL from environment
-  - Obtain singleton and call connect()
-  - See [index.ts:23-25](file://src/index.ts#L23-L25)
+  - Load INSFORGE_BASE_URL and INSFORGE_ANON_KEY from environment
+  - Obtain singleton and call connect() with environment-aware error handling
+  - See [index.ts:20-38](file://src/index.ts#L20-L38)
 - Query execution:
-  - Insert a site: [SiteRepository.ts:20-25](file://src/repository/SiteRepository.ts#L20-L25)
-  - Find by domain: [SiteRepository.ts:38-41](file://src/repository/SiteRepository.ts#L38-L41)
-  - Update entity: [EntityRepository.ts:54-61](file://src/repository/EntityRepository.ts#L54-L61)
-- Transaction usage:
-  - Wrap multiple operations in a transaction using [Database.ts:120-137](file://src/repository/Database.ts#L120-L137)
+  - Insert a site: [SiteRepository.ts:31-39](file://src/repository/SiteRepository.ts#L31-L39)
+  - Find by domain: [SiteRepository.ts:52-55](file://src/repository/SiteRepository.ts#L52-L55)
+  - Update entity: [EntityRepository.ts:68-77](file://src/repository/EntityRepository.ts#L68-L77)
 - Migration and seeding:
   - Run migrations with [run-migrations.ts:24-131](file://db/run-migrations.ts#L24-L131)
   - Seed data with [seed.ts:20-66](file://db/seed.ts#L20-L66)
 
 **Section sources**
-- [index.ts:23-25](file://src/index.ts#L23-L25)
-- [SiteRepository.ts:20-41](file://src/repository/SiteRepository.ts#L20-L41)
-- [EntityRepository.ts:54-61](file://src/repository/EntityRepository.ts#L54-L61)
-- [Database.ts:120-137](file://src/repository/Database.ts#L120-L137)
+- [index.ts:20-38](file://src/index.ts#L20-L38)
+- [SiteRepository.ts:31-55](file://src/repository/SiteRepository.ts#L31-L55)
+- [EntityRepository.ts:68-77](file://src/repository/EntityRepository.ts#L68-L77)
 - [run-migrations.ts:24-131](file://db/run-migrations.ts#L24-L131)
 - [seed.ts:20-66](file://db/seed.ts#L20-L66)
 
 ## Dependency Analysis
 - External dependencies:
-  - pg for PostgreSQL driver and connection pooling
+  - @insforge/sdk for Insforge database connectivity (optional dependency)
   - dotenv for environment loading
+  - pg for PostgreSQL driver (retained for migration tools)
 - Internal dependencies:
   - Database is consumed by repositories
   - Application entry point initializes and shuts down Database
-  - Environment module supplies DATABASE_URL
+  - Environment module supplies Insforge credentials
+
+**Updated** Added @insforge/sdk as optional dependency with environment-aware loading
 
 ```mermaid
 graph LR
 PJSON["package.json"]
-PG["pg"]
+INSFORGE["@insforge/sdk (optional)"]
 DOTENV["dotenv"]
-PJSON --> PG
+PG["pg"]
+PJSON --> INSFORGE
 PJSON --> DOTENV
+PJSON --> PG
 APP["src/index.ts"] --> DB["src/repository/Database.ts"]
 APP --> ENV["src/util/env.ts"]
 REPOS["Repositories"] --> DB
@@ -396,76 +390,85 @@ SEED["db/seed.ts"] --> ENV
 ```
 
 **Diagram sources**
-- [package.json:29-39](file://package.json#L29-L39)
+- [package.json:31-44](file://package.json#L31-L44)
 - [index.ts:4-7](file://src/index.ts#L4-L7)
 - [Database.ts:4](file://src/repository/Database.ts#L4)
 - [env.ts:4](file://src/util/env.ts#L4)
 
 **Section sources**
-- [package.json:29-39](file://package.json#L29-L39)
+- [package.json:31-44](file://package.json#L31-L44)
 - [index.ts:4-7](file://src/index.ts#L4-L7)
 - [Database.ts:4](file://src/repository/Database.ts#L4)
 - [env.ts:4](file://src/util/env.ts#L4)
 
 ## Performance Considerations
-- Pool sizing:
-  - Default max connections: 10. Adjust based on workload and database capacity.
-- Timeouts:
-  - Idle timeout: 30 seconds; consider tuning for long-running tasks.
-  - Connection timeout: 10 seconds; ensure adequate for slow networks.
-- Retry strategy:
-  - Exponential backoff reduces contention on transient failures.
+- Environment detection overhead:
+  - Minimal performance impact from Vercel environment checks
+  - SDK loading occurs only once during initialization
+- Connection management:
+  - Single client instance per process reduces resource usage
+  - Graceful fallback prevents application crashes in serverless environments
 - Query builder overhead:
-  - Dynamic SQL construction is lightweight; avoid unnecessary allocations by reusing filters.
-
-[No sources needed since this section provides general guidance]
+  - Insforge SDK operations are efficient for typed queries
+  - Avoid unnecessary allocations by reusing filters and query builders
 
 ## Troubleshooting Guide
 Common issues and resolutions:
-- Database not connected:
-  - Ensure DATABASE_URL is present and valid.
-  - Verify connect() is called before any query or transaction.
-  - See [index.ts:23-25](file://src/index.ts#L23-L25) and [Database.ts:56-71](file://src/repository/Database.ts#L56-L71).
-- Transient connection errors:
-  - The query method retries on known transient codes; check logs for repeated failures.
-  - See [Database.ts:86-115](file://src/repository/Database.ts#L86-L115).
-- Transaction failures:
-  - Errors automatically trigger ROLLBACK; inspect callback exceptions.
-  - See [Database.ts:120-137](file://src/repository/Database.ts#L120-L137).
+- Database SDK not available:
+  - Check if running in Vercel environment - SDK loading is disabled there
+  - Verify INSFORGE_BASE_URL and INSFORGE_ANON_KEY are set in environment
+  - See [Database.ts:6-25](file://src/repository/Database.ts#L6-L25) and [Database.ts:77-85](file://src/repository/Database.ts#L77-L85)
+- Vercel serverless compatibility:
+  - SDK loading is automatically disabled in Vercel environments
+  - Application continues without database in serverless deployments
+  - See [Database.ts:14-25](file://src/repository/Database.ts#L14-L25)
+- Connection failures:
+  - The connect method handles SDK availability and connection testing
+  - Check Insforge service status and credentials
+  - See [Database.ts:77-104](file://src/repository/Database.ts#L77-L104)
 - Graceful shutdown:
-  - Confirm db.close() is invoked on SIGTERM/SIGINT.
-  - See [index.ts:71-80](file://src/index.ts#L71-L80).
+  - Confirm db.close() resets client state properly
+  - See [Database.ts:133-136](file://src/repository/Database.ts#L133-L136)
 - Environment validation:
-  - Missing DATABASE_URL or invalid NODE_ENV/PORT leads to early exit in production.
-  - See [env.ts:34-84](file://src/util/env.ts#L34-L84).
+  - Missing Insforge credentials or invalid NODE_ENV/PORT leads to early exit in production
+  - See [env.ts:35-81](file://src/util/env.ts#L35-L81)
 
 **Section sources**
-- [index.ts:23-25](file://src/index.ts#L23-L25)
-- [Database.ts:56-71](file://src/repository/Database.ts#L56-L71)
-- [Database.ts:86-115](file://src/repository/Database.ts#L86-L115)
-- [Database.ts:120-137](file://src/repository/Database.ts#L120-L137)
-- [index.ts:71-80](file://src/index.ts#L71-L80)
-- [env.ts:34-84](file://src/util/env.ts#L34-L84)
+- [Database.ts:6-25](file://src/repository/Database.ts#L6-L25)
+- [Database.ts:77-85](file://src/repository/Database.ts#L77-L85)
+- [Database.ts:77-104](file://src/repository/Database.ts#L77-L104)
+- [Database.ts:133-136](file://src/repository/Database.ts#L133-L136)
+- [env.ts:35-81](file://src/util/env.ts#L35-L81)
 
 ## Conclusion
-The Database singleton encapsulates PostgreSQL connectivity, pooling, and typed query builders. It provides robust retry logic for transient errors, safe transaction semantics, and clean integration with repositories and the application lifecycle. Proper configuration of pool sizes and timeouts, combined with careful error handling, ensures reliable operation across environments.
-
-[No sources needed since this section summarizes without analyzing specific files]
+The Database singleton now provides enhanced environment awareness with graceful fallback mechanisms for @insforge/sdk. The implementation supports Vercel serverless compatibility through conditional SDK loading, handles ESM/CJS compatibility issues, and maintains backward compatibility for traditional Node.js environments. The typed query builders provide a clean interface for database operations while the environment detection ensures reliable operation across different deployment scenarios.
 
 ## Appendices
 
 ### Appendix A: Environment Configuration
-- DATABASE_URL is required for database connectivity.
+- INSFORGE_BASE_URL and INSFORGE_ANON_KEY are required for database connectivity.
 - Additional environment variables include NODE_ENV, PORT, LOG_LEVEL, CORS_ORIGIN.
 - Validation enforces required variables and numeric ranges.
+- Vercel serverless environments automatically disable SDK loading.
 
 **Section sources**
-- [env.ts:17-84](file://src/util/env.ts#L17-L84)
+- [env.ts:17-125](file://src/util/env.ts#L17-L125)
 
 ### Appendix B: Migration and Seeding Scripts
 - Migration runner connects with a minimal pool, validates DATABASE_URL, and applies SQL files sequentially.
 - Seeder script is planned for future phases and currently logs planned seed data.
+- These scripts operate independently of the Insforge database abstraction.
 
 **Section sources**
 - [run-migrations.ts:24-131](file://db/run-migrations.ts#L24-L131)
 - [seed.ts:20-66](file://db/seed.ts#L20-L66)
+
+### Appendix C: Vercel Serverless Compatibility
+- Environment detection identifies Vercel serverless deployments using VERCEL and VERCEL_ENV variables.
+- SDK loading is conditionally disabled in Vercel environments to avoid ESM/CJS compatibility issues.
+- Applications continue operating without database connectivity in serverless deployments.
+- Graceful fallback ensures application stability across deployment environments.
+
+**Section sources**
+- [Database.ts:6-25](file://src/repository/Database.ts#L6-L25)
+- [Database.ts:14-25](file://src/repository/Database.ts#L14-L25)
