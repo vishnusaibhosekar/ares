@@ -1,0 +1,206 @@
+================================================================================
+                    ARES BUILD ARTIFACTS - START HERE
+================================================================================
+
+Welcome! You have 8 markdown files ready for the ARES build.
+
+📋 FILES CREATED:
+├── README.md                            ← Summary of all files (start here!)
+├── ARES_BUILD_MASTER_INDEX.md          ← Architecture + project overview
+├── ARES_BUILD_PHASE_1.md               ← Phase 1: Scaffold + Schema (1 hr)
+├── ARES_BUILD_PHASE_2.md               ← Phase 2: Core Services (2 hrs)
+├── ARES_BUILD_PHASE_3.md               ← Phase 3: API Routes (1.5 hrs)
+├── ARES_BUILD_PHASE_4.md               ← Phase 4: UI + Demo (1.5 hrs)
+├── ARES_IMPLEMENTATION_NOTES.md        ← LLM Entity Extraction details
+└── ARES_QODER_QUICK_START.md           ← Copy-paste Qoder prompts + checklist
+
+================================================================================
+                              HOW TO USE THESE FILES
+================================================================================
+
+🎯 OPTION A: I just want to understand the project (15 min)
+   1. Read this file (you are here)
+   2. Read ARES_BUILD_MASTER_INDEX.md
+   3. Done! You understand the architecture
+
+🎯 OPTION B: I'm ready to code with Qoder (recommended)
+   1. Open ARES_QODER_QUICK_START.md
+   2. Copy the "Phase 1" master prompt
+   3. Paste into Qoder
+   4. Let Qoder execute each phase
+   5. Validate using the checklist in ARES_QODER_QUICK_START.md
+
+🎯 OPTION C: I want to code manually
+   1. Read ARES_BUILD_PHASE_1.md in detail
+   2. Follow all 10 steps to create scaffolding
+   3. Repeat for phases 2, 3, 4
+
+🎯 OPTION D: I want to understand how LLM extraction works
+   1. Read ARES_IMPLEMENTATION_NOTES.md
+   2. Understand Claude Haiku integration
+   3. Reference when building Phase 2 EntityExtractor
+
+================================================================================
+                            QUICK PROJECT SUMMARY
+================================================================================
+
+WHAT IS ARES?
+  ARES = Actor Resolution & Entity Service
+  - Identifies the OPERATORS behind counterfeit storefronts
+  - Links domains by shared contact info (phone, email, handles)
+  - Complements AEGE (which FINDS the counterfeit sites)
+
+WHY THIS HACKATHON?
+  - Showcases agentic development (Qoder)
+  - Uses agent-native backend (Insforge)
+  - Real production-grade code (not a toy)
+  - Full stack in 6 hours
+
+ARCHITECTURE:
+  Frontend (React)
+    ↓
+  API (Express) with 5 routes
+    ↓
+  Services (6 orchestrated services)
+    ↓
+  Database (Postgres via Insforge)
+
+BUILD TIMELINE:
+  Phase 1 (Scaffold)    → 1 hour
+  Phase 2 (Services)    → 2 hours
+  Phase 3 (API Routes)  → 1.5 hours
+  Phase 4 (UI + Demo)   → 1.5 hours
+  ─────────────────────────────────
+  TOTAL               → 6 hours
+
+================================================================================
+                           YOUR NEXT STEPS
+================================================================================
+
+1. If using Qoder:
+   → Open ARES_QODER_QUICK_START.md
+   → Copy Phase 1 prompt
+   → Paste into Qoder
+   → Follow checklist
+
+2. If reading for understanding:
+   → Open ARES_BUILD_MASTER_INDEX.md
+   → Then read each phase file in order
+   → Understand the architecture
+
+3. If coding manually:
+   → Open ARES_BUILD_PHASE_1.md
+   → Follow 10 steps sequentially
+   → Run tests after each phase
+
+4. If implementing LLM extraction:
+   → Open ARES_IMPLEMENTATION_NOTES.md
+   → See Claude API integration details
+   → Reference when building EntityExtractor
+
+================================================================================
+                              QUICK FAQ
+================================================================================
+
+Q: Where do I start?
+A: This file, then ARES_BUILD_MASTER_INDEX.md, then ARES_BUILD_PHASE_1.md
+
+Q: How long will this take?
+A: 3-4 hours with Qoder (agent helps), 6-8 hours manual
+
+Q: Do I need to read all files?
+A: No. Read Master Index for understanding, then jump to Phase files
+
+Q: Can I use this with Claude Code instead of Qoder?
+A: Yes! Same phases, same files, just different IDE
+
+Q: Is LLM extraction required?
+A: No, optional. Phase 2 has both regex and LLM modes
+
+Q: When do I run tests?
+A: After each phase. Commands in each phase file
+
+Q: How do I know if I'm on track?
+A: Use the checklist in ARES_QODER_QUICK_START.md
+
+Q: What if something breaks?
+A: Check "Common Issues" in ARES_QODER_QUICK_START.md
+
+================================================================================
+                         FILES AT A GLANCE
+================================================================================
+
+README.md (3 KB)
+  └─ Overview of all files, reading order, success criteria
+
+ARES_BUILD_MASTER_INDEX.md (14 KB)
+  ├─ Quick start guide
+  ├─ 4-phase breakdown
+  ├─ Architecture diagrams
+  ├─ Database schema summary
+  ├─ API contracts
+  └─ Demo flow
+
+ARES_BUILD_PHASE_1.md (13 KB) → Qoder: ~1 hour
+  ├─ Step 1: Project structure
+  ├─ Step 2: Package.json
+  ├─ Step 3: Database client
+  ├─ Step 4: TypeScript types
+  ├─ Step 5: Migrations
+  ├─ Step 6: Migration runner
+  ├─ Step 7: Express skeleton
+  ├─ Step 8: Environment config
+  ├─ Step 9: Utilities
+  └─ Step 10: README
+
+ARES_BUILD_PHASE_2.md (18 KB) → Qoder: ~2 hours
+  ├─ Service 1: EntityExtractor (regex + LLM)
+  ├─ Service 2: EntityNormalizer
+  ├─ Service 3: EmbeddingService
+  ├─ Service 4: SimilarityScorer
+  ├─ Service 5: ClusterResolver
+  └─ Service 6: ResolutionEngine
+
+ARES_BUILD_PHASE_3.md (16 KB) → Qoder: ~1.5 hours
+  ├─ Route 1: POST /api/ingest-site
+  ├─ Route 2: POST /api/resolve-actor
+  ├─ Route 3: GET /api/clusters/:id
+  ├─ Route 4: POST /api/seeds
+  ├─ Route 5: GET /health
+  ├─ Middleware: Error handling, logging
+  └─ Integration tests
+
+ARES_BUILD_PHASE_4.md (21 KB) → Qoder: ~1.5 hours
+  ├─ Frontend: React + Vite (4 pages)
+  ├─ Demo: CLI script
+  ├─ Examples: cURL + sample payloads
+  └─ Docs: README updates
+
+ARES_IMPLEMENTATION_NOTES.md (14 KB)
+  ├─ LLM extraction design
+  ├─ Claude Haiku API integration
+  ├─ System prompts
+  ├─ Error handling
+  ├─ Cost analysis
+  ├─ Regex patterns
+  └─ Testing strategies
+
+ARES_QODER_QUICK_START.md (12 KB)
+  ├─ Copy-paste Qoder prompts
+  ├─ Sequential phase prompts
+  ├─ Complete build checklist (100+ items)
+  ├─ Common issues & fixes
+  ├─ Success criteria
+  └─ Timing estimates
+
+================================================================================
+                        YOU'RE READY TO BUILD!
+================================================================================
+
+Next: Open ARES_BUILD_MASTER_INDEX.md (or jump to Phase 1)
+
+Questions? Check the corresponding phase file.
+
+Good luck! 🚀
+
+================================================================================
