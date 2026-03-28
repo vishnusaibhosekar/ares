@@ -1,24 +1,27 @@
 // src/repository/Database.ts
 // Singleton Insforge client with typed query builders
+// NOTE: @insforge/sdk has ESM/CJS compatibility issues in Vercel serverless
+// This module provides a graceful fallback when the SDK is unavailable
+
+// Check if we're in a Vercel serverless environment
+const IS_VERCEL = process.env.VERCEL === '1' || process.env.VERCEL_ENV !== undefined;
 
 // Flag to track if SDK is available
 let sdkAvailable = false;
-let sdkError: Error | null = null;
-
-// Use any type for the SDK to avoid ESM/CJS compatibility type issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let insforgeSDK: any = null;
 
-// Try to load the SDK at module initialization
-try {
-    // Use require for synchronous loading with error handling
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    insforgeSDK = require('@insforge/sdk');
-    sdkAvailable = true;
-} catch (error) {
-    sdkError = error instanceof Error ? error : new Error(String(error));
-    console.warn('Insforge SDK not available:', sdkError.message);
-    console.warn('Database functionality will be disabled.');
+// Only try to load SDK if NOT in Vercel (to avoid the ESM/CJS issue)
+if (!IS_VERCEL) {
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        insforgeSDK = require('@insforge/sdk');
+        sdkAvailable = true;
+    } catch (error) {
+        console.warn('Insforge SDK not available:', error instanceof Error ? error.message : String(error));
+    }
+} else {
+    console.log('Running in Vercel environment - database SDK disabled due to ESM/CJS compatibility');
 }
 
 // Generic record type
@@ -78,7 +81,7 @@ export class Database {
 
         // Check if SDK is available
         if (!sdkAvailable) {
-            throw new Error(`Database SDK not available: ${sdkError?.message || 'Unknown error'}`);
+            throw new Error('Database SDK not available in this environment');
         }
 
         this.client = insforgeSDK.createClient({
