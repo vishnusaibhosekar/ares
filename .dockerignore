@@ -1,0 +1,16 @@
+node_modules
+frontend/node_modules
+.git
+.gitignore
+*.md
+.env
+.env.*
+!.env.example
+tests
+demos
+PRDs
+.qoder
+.insforge
+*.log
+.DS_Store
+coverage

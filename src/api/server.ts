@@ -5,6 +5,7 @@
 
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+import path from 'path';
 import { logger } from '../util/logger';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
 import { loggerMiddleware } from './middleware/logger';
@@ -68,11 +69,31 @@ export function createApp(): Application {
     }
 
     // ============================================
+    // Static Files (Frontend)
+    // ============================================
+    
+    // Serve frontend static files in production
+    if (process.env.NODE_ENV === 'production') {
+        const frontendPath = path.join(__dirname, '../../frontend/dist');
+        app.use(express.static(frontendPath));
+        
+        // SPA fallback - serve index.html for all non-API routes
+        app.get('*', (req: Request, res: Response) => {
+            // Don't serve index.html for API routes
+            if (req.path.startsWith('/api') || req.path === '/health') {
+                res.status(404).json({ error: 'Not Found' });
+                return;
+            }
+            res.sendFile(path.join(frontendPath, 'index.html'));
+        });
+    } else {
+        // 404 handler for unmatched routes (development)
+        app.use(notFoundHandler);
+    }
+
+    // ============================================
     // Error Handling
     // ============================================
-
-    // 404 handler for unmatched routes
-    app.use(notFoundHandler);
 
     // Global error handler (must be last)
     app.use(errorHandler);
