@@ -1,7 +1,21 @@
 // src/repository/Database.ts
 // Singleton Insforge client with typed query builders
 
-import { createClient, type InsForgeClient } from '@insforge/sdk';
+// Use any type for the SDK to avoid ESM/CJS compatibility type issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let insforgeSDK: any = null;
+
+// Lazy load the Insforge SDK
+async function loadInsforgeSDK(): Promise<void> {
+    if (!insforgeSDK) {
+        try {
+            insforgeSDK = await import('@insforge/sdk');
+        } catch (error) {
+            console.error('Failed to load @insforge/sdk:', error);
+            throw new Error('Insforge SDK not available. Check package compatibility.');
+        }
+    }
+}
 
 // Generic record type
 type DatabaseRecord = Record<string, unknown>;
@@ -27,7 +41,8 @@ interface InsforgeResult<T> {
  */
 export class Database {
     private static instance: Database | null = null;
-    private client: InsForgeClient | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private client: any = null;
     private baseUrl: string;
     private anonKey: string;
 
@@ -57,7 +72,10 @@ export class Database {
             return;
         }
 
-        this.client = createClient({
+        // Load SDK dynamically
+        await loadInsforgeSDK();
+
+        this.client = insforgeSDK.createClient({
             baseUrl: this.baseUrl,
             anonKey: this.anonKey,
         });
@@ -79,7 +97,8 @@ export class Database {
     /**
      * Get the Insforge client (for advanced usage)
      */
-    getClient(): InsForgeClient {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getClient(): any {
         if (!this.client) {
             throw new Error('Database not connected. Call connect() first.');
         }
