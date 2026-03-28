@@ -1,7 +1,8 @@
-# ARES Demo Walkthrough
+# ARES Demo Walkthrough — Frontend Edition
 
 > **Duration**: ~5 minutes  
-> **Purpose**: Demonstrate ARES (Actor Resolution & Entity Service) built with Qoder + Insforge
+> **Purpose**: Demonstrate ARES (Actor Resolution & Entity Service) built with Qoder + Insforge  
+> **Format**: 100% UI-based demo — no terminal commands shown
 
 ---
 
@@ -9,22 +10,21 @@
 
 ### Before Recording
 
-- [ ] Terminal ready with ARES directory open
-- [ ] VS Code/Qoder IDE open with project
-- [ ] Browser ready (for frontend demo)
-- [ ] Insforge CLI linked (`npx @insforge/cli current` shows project)
+- [ ] Backend running (`npm run dev` in background)
+- [ ] Frontend running (`cd frontend && npm run dev` in background)
+- [ ] Browser open to `http://localhost:5173`
+- [ ] Database cleared of previous demo data (fresh start)
 
-### Environment Setup
-
-```bash
-# Verify .env has all keys
-cat .env | grep -E "INSFORGE|MIXEDBREAD|ANTHROPIC"
-# Should show all 4 keys set
-```
-
-### Clear Previous Data
+### Pre-Demo Setup (Off Camera)
 
 ```bash
+# Terminal 1 - Start backend (minimize after starting)
+npm run dev
+
+# Terminal 2 - Start frontend (minimize after starting)
+cd frontend && npm run dev
+
+# Clear previous data
 npx @insforge/cli db query "TRUNCATE sites, entities, clusters, cluster_memberships, embeddings, resolution_runs CASCADE;"
 ```
 
@@ -32,231 +32,228 @@ npx @insforge/cli db query "TRUNCATE sites, entities, clusters, cluster_membersh
 
 ## Demo Script
 
-### PART 1: Introduction (30 seconds)
+### SCENE 1: Introduction (30 seconds)
 
-**[Show: Slide or README]**
+**[Show: Browser at Dashboard — http://localhost:5173]**
 
 > "Hi, I'm [Name]. Today I'm demoing ARES — the Actor Resolution and Entity Service.
 >
-> ARES solves a real problem: when you find a counterfeit website, how do you know if it's connected to other scam sites? ARES automatically links sites by shared contact info — emails, phones, social handles.
+> ARES solves a real problem: when you find a counterfeit website, how do you know if it's connected to other scam sites?
 >
-> We built this in 6 hours using Qoder for agentic development and Insforge for the backend."
-
----
-
-### PART 2: Architecture Overview (45 seconds)
-
-**[Show: Terminal or diagram]**
-
-> "Let me quickly show you the stack..."
-
-```bash
-# Show project structure
-ls -la src/
-```
-
-> "We have:
-> - **Express API** with 5 endpoints
-> - **6 core services** including entity extraction and similarity scoring  
-> - **Insforge** providing managed PostgreSQL with pgvector for embeddings
-> - **React frontend** for visualization"
-
-```bash
-# Show Insforge connection
-npx @insforge/cli current
-```
-
-> "Insforge handles our database — no infrastructure to manage."
-
----
-
-### PART 3: Start the Application (30 seconds)
-
-**[Action: Start servers]**
-
-```bash
-# Terminal 1: Start backend
-npm run dev
-```
-
-**[Wait for startup message]**
-
-> "Backend is running on port 3000..."
-
-```bash
-# Terminal 2: Start frontend
-cd frontend && npm run dev
-```
-
-> "...and frontend on port 5173."
-
----
-
-### PART 4: Health Check (20 seconds)
-
-**[Action: Check health]**
-
-```bash
-curl -s http://localhost:3000/health | jq
-```
-
-**[Expected output]**
-```json
-{
-  "status": "ok",
-  "database": "connected",
-  "embeddings": "configured",
-  "llm": "configured"
-}
-```
-
-> "All systems green. Database connected to Insforge, embeddings via Mixedbread AI, and optional LLM via Anthropic."
-
----
-
-### PART 5: Seed Test Data (30 seconds)
-
-**[Action: Seed database]**
-
-```bash
-curl -s -X POST http://localhost:3000/api/seeds | jq
-```
-
-**[Expected output]**
-```json
-{
-  "sites_created": 12,
-  "entities_created": 36,
-  "clusters_created": 5
-}
-```
-
-> "I've just seeded the database with 5 known operator clusters — think of these as known bad actors. 12 sites, each with shared contact information linking them together."
-
----
-
-### PART 6: The Core Demo — Resolve a New Site (90 seconds)
-
-**[Action: Ingest a suspicious site]**
-
-> "Now here's the magic. Imagine we discover a new suspicious website. Let's see if it connects to any known operators..."
-
-```bash
-curl -s -X POST http://localhost:3000/api/resolve-actor \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://new-replica-watches.cn",
-    "page_text": "Contact us at shipping@luxeoutlet.cn or call +8613812345678. Follow @luxe_deals on Instagram. Returns within 14 days."
-  }' | jq
-```
-
-**[Expected output]**
-```json
-{
-  "actor_cluster_id": "...",
-  "confidence": 1,
-  "related_domains": ["fake-luxe.shop"],
-  "matching_signals": ["exact_email", "exact_phone", "exact_handle"],
-  "explanation": "Matched with high confidence (100.0%) based on matching email address, matching phone number, matching social media handle..."
-}
-```
-
-> "**100% confidence match!** 
+> ARES automatically links sites by shared contact info — emails, phones, and social handles.
 >
-> ARES found that this new site shares an email, phone number, AND social handle with an existing cluster called 'Shenzhen Luxury Replica Syndicate'.
+> We built this in 6 hours using **Qoder** for agentic development and **Insforge** for the managed backend."
+
+---
+
+### SCENE 2: Dashboard Overview (30 seconds)
+
+**[Show: Dashboard page]**
+
+> "This is the ARES dashboard. You can see our system health at a glance:
 >
-> This is powerful — a brand new domain, but we immediately know it's the same operator."
+> - **Database**: Connected to Insforge's managed PostgreSQL
+> - **Embeddings**: Powered by Mixedbread AI for semantic similarity
+> - **LLM**: Anthropic Claude for advanced entity extraction
+>
+> Right now, the database is empty. Let's populate it with some known threat actors."
 
 ---
 
-### PART 7: Show the Frontend (45 seconds)
+### SCENE 3: Seed the Database (45 seconds)
 
-**[Action: Open browser to http://localhost:5173]**
+**[Action: Click "Seed Database" button on Dashboard]**
 
-> "Let me show you the frontend..."
+> "I'll click 'Seed Database' to add our test data..."
 
-**[Navigate: Dashboard]**
+**[Wait for success toast/notification]**
 
-> "The dashboard shows our system status and cluster overview."
+> "Done! We've just created:
+> - **5 operator clusters** — these represent known bad actors
+> - **12 scam websites** — each linked to a cluster
+> - **36 entities** — emails, phone numbers, and social handles
+>
+> Think of these as our threat intelligence database. Real analysts would build this over time by investigating counterfeit sites."
 
-**[Navigate: Ingest Site page]**
-
-> "Here you can paste a URL and page content to ingest a new site..."
-
-**[Navigate: Resolve Actor page]**
-
-> "...and here's where analysts can run resolution queries to find operator connections."
-
----
-
-### PART 8: How It Works (30 seconds)
-
-**[Show: Code or architecture slide]**
-
-> "Under the hood, ARES:
-> 1. **Extracts entities** — emails, phones, handles, crypto wallets
-> 2. **Normalizes them** — standardizes formats for comparison  
-> 3. **Generates embeddings** — for semantic similarity on policy text
-> 4. **Clusters sites** — using a union-find algorithm
-> 5. **Returns matches** — with confidence scores and explanations"
+**[Show: Dashboard now displays cluster count]**
 
 ---
 
-### PART 9: The Qoder + Insforge Story (30 seconds)
+### SCENE 4: Navigate to Resolve Actor (15 seconds)
+
+**[Action: Click "Resolve Actor" in the navigation]**
+
+> "Now let's use ARES for what it's built for — identifying unknown operators.
+>
+> I'll navigate to the Resolve Actor page..."
+
+---
+
+### SCENE 5: The Core Demo — Resolve a Suspicious Site (90 seconds)
+
+**[Show: Resolve Actor page with empty form]**
+
+> "Imagine we've just discovered a suspicious website selling counterfeit watches. We have the URL and some text from the page.
+>
+> Let me paste that in..."
+
+**[Action: Fill in the form]**
+
+| Field | Value |
+|-------|-------|
+| **Site URL** | `https://new-replica-watches.cn` |
+| **Page Content** | `Contact us at shipping@luxeoutlet.cn or call +8613812345678. Follow @luxe_deals on Instagram. Returns within 14 days.` |
+
+> "This looks like a typical counterfeit luxury goods site. Contact email, phone number, Instagram handle.
+>
+> Let's see if ARES can connect this to any known operators..."
+
+**[Action: Click "Resolve Actor" button]**
+
+**[Wait for results to appear]**
+
+> "**Boom! 100% confidence match!**
+>
+> ARES found that this brand-new website is connected to an existing cluster — the 'Shenzhen Luxury Replica Syndicate'.
+>
+> Look at the matching signals:
+> - **Exact email match**: `shipping@luxeoutlet.cn`
+> - **Exact phone match**: `+8613812345678`  
+> - **Exact handle match**: `@luxe_deals`
+>
+> Three independent signals all pointing to the same operator. This isn't a coincidence."
+
+---
+
+### SCENE 6: View Cluster Details (45 seconds)
+
+**[Action: Click on the matched cluster link/card]**
+
+> "Let me click into this cluster to see more details..."
+
+**[Show: Cluster Details page]**
+
+> "Here's everything we know about this operator:
+>
+> - **Related domains**: All the sites we've previously linked to this cluster
+> - **Shared entities**: The contact information that connects them
+> - **Timeline**: When each site was discovered
+>
+> Every time we find a new site with matching contact info, it automatically gets linked here."
+
+---
+
+### SCENE 7: Try Another Resolution (45 seconds)
+
+**[Action: Navigate back to Resolve Actor]**
+
+> "Let's try another example — this time with just a phone number..."
+
+**[Action: Fill in the form]**
+
+| Field | Value |
+|-------|-------|
+| **Site URL** | `https://cheap-electronics.store` |
+| **Page Content** | `Call +380441234567 for orders. Fast shipping to Europe!` |
+
+**[Action: Click "Resolve Actor" button]**
+
+> "Another match! This time it's the 'Eastern Europe Dropship Network'.
+>
+> Just one phone number was enough to identify the operator. That's the power of entity-based resolution."
+
+---
+
+### SCENE 8: Show a No-Match Scenario (30 seconds)
+
+**[Action: Fill in the form with new data]**
+
+| Field | Value |
+|-------|-------|
+| **Site URL** | `https://totally-new-scam.com` |
+| **Page Content** | `Contact: unknownperson@protonmail.com` |
+
+**[Action: Click "Resolve Actor" button]**
+
+> "This time... no match found.
+>
+> ARES has created a new cluster for this unknown operator. As we discover more sites, if any share this email address, they'll automatically be linked together.
+>
+> The system learns and grows over time."
+
+---
+
+### SCENE 9: Ingest a New Site (Optional - 30 seconds)
+
+**[Action: Navigate to "Ingest Site" page]**
+
+> "There's also a dedicated page for just ingesting sites without resolution.
+>
+> Analysts can bulk-add sites to the database, extract their entities, and build the threat intelligence graph."
+
+**[Show: Ingest Site form]**
+
+---
+
+### SCENE 10: How We Built This (30 seconds)
+
+**[Show: Dashboard or architecture view]**
 
 > "What's special here is HOW we built this.
 >
-> **Qoder** autonomously scaffolded the entire service — reading specs from markdown files and building each phase: domain models, services, API routes, frontend.
+> **Qoder** autonomously scaffolded the entire service — domain models, services, API routes, and this React frontend — all from markdown specs.
 >
-> **Insforge** provided the backend primitives — managed Postgres with pgvector, no infrastructure setup needed.
+> **Insforge** provided the backend primitives — managed Postgres with pgvector for embeddings, no infrastructure setup needed.
 >
-> The result: a production-grade identity resolution system in 6 hours."
+> The result: a production-grade identity resolution system in **6 hours**."
 
 ---
 
-### PART 10: Wrap Up (15 seconds)
+### SCENE 11: Wrap Up (15 seconds)
+
+**[Show: Dashboard with populated data]**
 
 > "That's ARES — Actor Resolution made simple.
 >
-> Check out the repo, and thanks for watching!"
+> Find a suspicious site, paste in its content, and instantly know if it's connected to known threat actors.
+>
+> Thanks for watching!"
 
 ---
 
-## Quick Reference Commands
+## Test Data Reference
 
-### One-Liner Demo (if short on time)
+### Known Clusters in Seed Data
 
-```bash
-# Full demo in one terminal session
-curl -s http://localhost:3000/health | jq '.status'
-curl -s -X POST http://localhost:3000/api/seeds | jq
-curl -s -X POST http://localhost:3000/api/resolve-actor \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://scam-site.cn","page_text":"Contact: shipping@luxeoutlet.cn +8613812345678"}' | jq
-```
+| Cluster Name | Related Domains | Key Entities |
+|--------------|-----------------|-------------|
+| Shenzhen Luxury Replica Syndicate | fake-luxe.shop | shipping@luxeoutlet.cn, +8613812345678, @luxe_deals |
+| Eastern Europe Dropship Network | tech-bargains.ua | support@techdeals.ua, +380441234567 |
+| Southeast Asia Counterfeit Ring | cheap-goods.ph | orders@bargainworld.ph, +639123456789 |
+| Crypto Scam Collective | nft-deals.io | support@cryptodeals.io, @crypto_offers |
+| Generic Fraud Network | scam-deals.com | contact@genericfraud.com |
 
-### Alternative Test Scenarios
+### Demo Scenarios
 
-**Match by email only:**
-```bash
-curl -s -X POST http://localhost:3000/api/resolve-actor \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://another-fake.com","page_text":"Email us at support@techdeals.ua"}' | jq
-```
+**Scenario 1: Multi-Signal Match (100% confidence)**
+- URL: `https://new-replica-watches.cn`
+- Content: `Contact us at shipping@luxeoutlet.cn or call +8613812345678. Follow @luxe_deals on Instagram.`
+- Expected: Match to "Shenzhen Luxury Replica Syndicate"
 
-**Match by phone only:**
-```bash
-curl -s -X POST http://localhost:3000/api/resolve-actor \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://cheap-electronics.store","page_text":"Call +380441234567 for orders"}' | jq
-```
+**Scenario 2: Single Signal Match (High confidence)**
+- URL: `https://cheap-electronics.store`
+- Content: `Call +380441234567 for orders`
+- Expected: Match to "Eastern Europe Dropship Network"
 
-**No match (new operator):**
-```bash
-curl -s -X POST http://localhost:3000/api/resolve-actor \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://totally-new-site.com","page_text":"Contact: newperson@gmail.com +15551234567"}' | jq
-```
+**Scenario 3: Email-Only Match**
+- URL: `https://another-fake.com`
+- Content: `Email us at support@techdeals.ua`
+- Expected: Match to "Eastern Europe Dropship Network"
+
+**Scenario 4: No Match (New Operator)**
+- URL: `https://totally-new-site.com`
+- Content: `Contact: newperson@gmail.com +15551234567`
+- Expected: No match, new cluster created
 
 ---
 
@@ -264,20 +261,33 @@ curl -s -X POST http://localhost:3000/api/resolve-actor \
 
 | Issue | Fix |
 |-------|-----|
-| Database not connected | Check `.env` has `INSFORGE_BASE_URL` and `INSFORGE_ANON_KEY` |
-| Health check shows `llm: not_configured` | Add `ANTHROPIC_API_KEY` to `.env` (optional) |
-| Seeds fail with conflict | Run the TRUNCATE command to clear data |
-| Frontend not loading | Make sure `cd frontend && npm run dev` is running |
+| Dashboard shows "Database: disconnected" | Check backend is running on port 3000 |
+| "Failed to fetch" errors | Backend not running or CORS issue |
+| Seed button not working | Check `.env` has valid Insforge credentials |
+| No matches found for known entities | Database might be empty — click Seed first |
+| Page not loading | Frontend not running — `cd frontend && npm run dev` |
 
 ---
 
 ## Key Talking Points
 
 1. **Problem**: Counterfeit sites hide behind new domains, but operators reuse contact info
-2. **Solution**: ARES automatically links sites by shared entities
-3. **Tech**: Built with Qoder (agentic dev) + Insforge (managed backend)
-4. **Speed**: Production-grade system in 6 hours
-5. **Result**: 100% confidence matches on shared email/phone/handle
+2. **Solution**: ARES automatically links sites by shared entities (emails, phones, handles)
+3. **Demo flow**: Seed data → Resolve suspicious site → See instant match
+4. **Tech**: Built with Qoder (agentic dev) + Insforge (managed backend)
+5. **Speed**: Production-grade system in 6 hours
+6. **Result**: 100% confidence matches on shared identifiers
+
+---
+
+## Recording Tips
+
+- **Browser**: Use a clean browser profile or incognito mode
+- **Resolution**: 1920x1080 works well for screen recording
+- **Zoom**: Consider zooming browser to 110-125% for readability
+- **Mouse**: Move slowly, pause briefly before clicking
+- **Forms**: Type slowly or paste deliberately — let viewers follow
+- **Pauses**: Brief pauses after results appear help comprehension
 
 ---
 

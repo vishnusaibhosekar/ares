@@ -1,20 +1,24 @@
 // src/repository/Database.ts
 // Singleton Insforge client with typed query builders
 
+// Flag to track if SDK is available
+let sdkAvailable = false;
+let sdkError: Error | null = null;
+
 // Use any type for the SDK to avoid ESM/CJS compatibility type issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let insforgeSDK: any = null;
 
-// Lazy load the Insforge SDK
-async function loadInsforgeSDK(): Promise<void> {
-    if (!insforgeSDK) {
-        try {
-            insforgeSDK = await import('@insforge/sdk');
-        } catch (error) {
-            console.error('Failed to load @insforge/sdk:', error);
-            throw new Error('Insforge SDK not available. Check package compatibility.');
-        }
-    }
+// Try to load the SDK at module initialization
+try {
+    // Use require for synchronous loading with error handling
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    insforgeSDK = require('@insforge/sdk');
+    sdkAvailable = true;
+} catch (error) {
+    sdkError = error instanceof Error ? error : new Error(String(error));
+    console.warn('Insforge SDK not available:', sdkError.message);
+    console.warn('Database functionality will be disabled.');
 }
 
 // Generic record type
@@ -72,8 +76,10 @@ export class Database {
             return;
         }
 
-        // Load SDK dynamically
-        await loadInsforgeSDK();
+        // Check if SDK is available
+        if (!sdkAvailable) {
+            throw new Error(`Database SDK not available: ${sdkError?.message || 'Unknown error'}`);
+        }
 
         this.client = insforgeSDK.createClient({
             baseUrl: this.baseUrl,

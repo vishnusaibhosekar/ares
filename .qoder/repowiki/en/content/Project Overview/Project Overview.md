@@ -4,334 +4,426 @@
 **Referenced Files in This Document**
 - [README.md](file://README.md)
 - [ARCHITECTURE.md](file://ARCHITECTURE.md)
-- [src/index.ts](file://src/index.ts)
+- [package.json](file://package.json)
+- [frontend/src/App.tsx](file://frontend/src/App.tsx)
+- [frontend/src/pages/Dashboard.tsx](file://frontend/src/pages/Dashboard.tsx)
+- [frontend/src/pages/IngestSite.tsx](file://frontend/src/pages/IngestSite.tsx)
+- [frontend/src/pages/ResolveActor.tsx](file://frontend/src/pages/ResolveActor.tsx)
+- [frontend/src/pages/ClusterDetails.tsx](file://frontend/src/pages/ClusterDetails.tsx)
 - [src/api/server.ts](file://src/api/server.ts)
 - [src/api/routes/ingest-site.ts](file://src/api/routes/ingest-site.ts)
 - [src/api/routes/resolve-actor.ts](file://src/api/routes/resolve-actor.ts)
 - [src/service/EntityExtractor.ts](file://src/service/EntityExtractor.ts)
 - [src/service/EmbeddingService.ts](file://src/service/EmbeddingService.ts)
-- [src/service/ClusterResolver.ts](file://src/service/ClusterResolver.ts)
 - [src/service/ResolutionEngine.ts](file://src/service/ResolutionEngine.ts)
-- [src/repository/EntityRepository.ts](file://src/repository/EntityRepository.ts)
-- [src/repository/ClusterRepository.ts](file://src/repository/ClusterRepository.ts)
-- [src/domain/models/Entity.ts](file://src/domain/models/Entity.ts)
-- [package.json](file://package.json)
+- [src/repository/Database.ts](file://src/repository/Database.ts)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated to reflect comprehensive ARES MVP implementation with React frontend and Express backend
+- Added detailed frontend architecture with React Router and component-based UI
+- Integrated Insforge database integration replacing PostgreSQL + pgvector
+- Enhanced entity extraction with LLM support using Anthropic Claude
+- Expanded API endpoints with complete CRUD operations for all resources
+- Added comprehensive frontend pages for dashboard, site ingestion, actor resolution, and cluster management
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Project Structure](#project-structure)
-3. [Core Components](#core-components)
-4. [Architecture Overview](#architecture-overview)
-5. [Detailed Component Analysis](#detailed-component-analysis)
-6. [Dependency Analysis](#dependency-analysis)
-7. [Performance Considerations](#performance-considerations)
-8. [Troubleshooting Guide](#troubleshooting-guide)
-9. [Conclusion](#conclusion)
+2. [System Architecture](#system-architecture)
+3. [Frontend Implementation](#frontend-implementation)
+4. [Backend Services](#backend-services)
+5. [Database Integration](#database-integration)
+6. [Core Capabilities](#core-capabilities)
+7. [API Endpoints](#api-endpoints)
+8. [Development Workflow](#development-workflow)
+9. [Practical Use Cases](#practical-use-cases)
+10. [Conclusion](#conclusion)
 
 ## Introduction
-ARES is a fraud detection and entity resolution platform designed to identify the operators behind counterfeit storefronts by linking domains, entities, and behavioral patterns. Its core value proposition is to transform fragmented signals (websites, emails, phones, handles, crypto addresses) into actionable intelligence by grouping related storefronts into operator “actors” through automated entity extraction, normalization, embedding generation, and clustering.
+ARES (Actor Resolution & Entity Service) is a comprehensive fraud detection and entity resolution platform designed to identify operators behind counterfeit storefronts by linking domains, entities, and behavioral patterns. The system combines deterministic entity matching with embedding-based similarity to transform fragmented signals (websites, emails, phones, handles, crypto addresses) into actionable intelligence by grouping related storefronts into operator "actors".
 
-Target audiences:
-- Fraud investigators who need to trace repeat offenders across multiple storefronts
+**Core Value Proposition:**
+- Automated entity extraction from page content and manual inputs
+- Semantic similarity matching using Mixedbread AI embeddings
+- Intelligent clustering to identify common operators across multiple platforms
+- Real-time actor resolution with confidence scoring and explanations
+- Complete observability through detailed cluster analysis and resolution history
+
+**Target Audiences:**
+- Fraud investigators tracing repeat offenders across multiple storefronts
 - Security teams monitoring darknet or e-commerce marketplaces for coordinated fraud
-- E-commerce platforms seeking to detect and mitigate organized counterfeiting rings
+- E-commerce platforms detecting and mitigating organized counterfeiting rings
+- Compliance officers monitoring regulatory violations across digital channels
 
-Key capabilities:
-- Site ingestion: Accept storefront URLs with page content and extract entities
-- Entity extraction: Automatically detect emails, phones, social handles, and crypto wallets
-- Embedding generation: Produce semantic embeddings for similarity matching
-- Actor resolution: Cluster related sites and entities to identify common operators
-- API-first design: Provide REST endpoints for seamless integration
-
-Practical use cases:
-- Investigating fraudulent marketplaces: Ingest suspicious storefronts, resolve actors across domains, and track related entities to uncover ring leadership
-- Cross-platform monitoring: Consolidate signals from multiple sources into unified operator profiles
-
-## Project Structure
-ARES follows a layered architecture with clear separation of concerns:
-- API layer: Express routes and middleware
-- Service layer: Business logic for entity extraction, normalization, embeddings, similarity scoring, clustering, and orchestration
-- Repository layer: Typed data access to PostgreSQL with pgvector support
-- Domain models and types: Strongly typed models and API contracts
-- Utilities: Environment configuration, logging, validation, and helpers
+## System Architecture
+ARES implements a modern full-stack architecture with clear separation of concerns across frontend, backend, and database layers:
 
 ```mermaid
 graph TB
-subgraph "API Layer"
-R1["ingest-site.ts"]
-R2["resolve-actor.ts"]
+subgraph "Frontend Layer (React)"
+FE1[Dashboard]
+FE2[Ingest Site]
+FE3[Resolve Actor]
+FE4[Cluster Details]
+FE5[Navigation & Layout]
 end
-subgraph "Service Layer"
-S1["EntityExtractor"]
-S2["EmbeddingService"]
-S3["ClusterResolver"]
-S4["ResolutionEngine"]
+subgraph "API Layer (Express)"
+API1[Health Check]
+API2[Site Ingestion]
+API3[Actor Resolution]
+API4[Cluster Management]
+API5[Seed Data]
+end
+subgraph "Business Logic Layer"
+BL1[Entity Extraction]
+BL2[Embedding Generation]
+BL3[Similarity Scoring]
+BL4[Cluster Resolution]
+BL5[Resolution Engine]
+end
+subgraph "Data Access Layer"
+DA1[Database Client]
+DA2[Repository Pattern]
+DA3[Typed Queries]
+end
+subgraph "External Services"
+ES1[Mixedbread AI]
+ES2[Anthropic Claude]
+ES3[Insforge Database]
+end
+FE1 --> API1
+FE2 --> API2
+FE3 --> API3
+FE4 --> API4
+API1 --> BL5
+API2 --> BL5
+API3 --> BL5
+API4 --> BL5
+BL5 --> BL1
+BL5 --> BL2
+BL5 --> BL3
+BL5 --> BL4
+BL1 --> DA1
+BL2 --> DA1
+BL3 --> DA1
+BL4 --> DA1
+DA1 --> ES3
+BL2 --> ES1
+BL1 --> ES2
+```
+
+**Diagram sources**
+- [frontend/src/App.tsx:13-27](file://frontend/src/App.tsx#L13-L27)
+- [src/api/server.ts:22-81](file://src/api/server.ts#L22-L81)
+- [src/service/ResolutionEngine.ts:102-124](file://src/service/ResolutionEngine.ts#L102-L124)
+- [src/repository/Database.ts:28-50](file://src/repository/Database.ts#L28-L50)
+
+## Frontend Implementation
+The ARES frontend is built with React and provides a comprehensive user interface for fraud investigation workflows:
+
+### React Application Structure
+The frontend uses React Router for navigation and implements a component-based architecture:
+
+```mermaid
+graph TB
+subgraph "React Application"
+App[App.tsx - Root Component]
+Layout[Layout.tsx - Navigation Wrapper]
+subgraph "Pages"
+Dashboard[Dashboard.tsx]
+IngestSite[IngestSite.tsx]
+ResolveActor[ResolveActor.tsx]
+ClusterDetails[ClusterDetails.tsx]
+NotFound[NotFound.tsx]
+end
+subgraph "Components"
+Forms[Forms/ - Input Components]
+ErrorAlert[ErrorAlert.tsx]
+LoadingSpinner[LoadingSpinner.tsx]
+Navigation[Navigation.tsx]
+end
+subgraph "Hooks & Libraries"
+useApi[useApi.ts - API Hooks]
+api[api.ts - API Client]
+types[types.ts - Type Definitions]
+end
+end
+App --> Layout
+Layout --> Dashboard
+Layout --> IngestSite
+Layout --> ResolveActor
+Layout --> ClusterDetails
+Layout --> NotFound
+```
+
+**Diagram sources**
+- [frontend/src/App.tsx:13-27](file://frontend/src/App.tsx#L13-L27)
+- [frontend/src/pages/Dashboard.tsx:49-226](file://frontend/src/pages/Dashboard.tsx#L49-L226)
+- [frontend/src/pages/IngestSite.tsx:13-296](file://frontend/src/pages/IngestSite.tsx#L13-L296)
+- [frontend/src/pages/ResolveActor.tsx:13-338](file://frontend/src/pages/ResolveActor.tsx#L13-L338)
+- [frontend/src/pages/ClusterDetails.tsx:23-297](file://frontend/src/pages/ClusterDetails.tsx#L23-L297)
+
+### Key Frontend Features
+- **Real-time Form Validation**: Comprehensive input validation with instant feedback
+- **Responsive Design**: Mobile-friendly interface optimized for investigation work
+- **Interactive Dashboards**: Live system health monitoring and quick action buttons
+- **Visual Confidence Indicators**: Color-coded confidence scores and risk assessments
+- **Copy-to-Clipboard**: One-click copying of IDs and important identifiers
+- **Error Handling**: User-friendly error messages with recovery options
+- **Loading States**: Progress indicators for long-running operations
+
+**Section sources**
+- [frontend/src/pages/Dashboard.tsx:128-182](file://frontend/src/pages/Dashboard.tsx#L128-L182)
+- [frontend/src/pages/IngestSite.tsx:183-290](file://frontend/src/pages/IngestSite.tsx#L183-L290)
+- [frontend/src/pages/ResolveActor.tsx:173-332](file://frontend/src/pages/ResolveActor.tsx#L173-L332)
+- [frontend/src/pages/ClusterDetails.tsx:105-292](file://frontend/src/pages/ClusterDetails.tsx#L105-L292)
+
+## Backend Services
+The backend implements a microservice-oriented architecture with specialized services for different aspects of entity resolution:
+
+### Service Layer Architecture
+```mermaid
+graph TB
+subgraph "Resolution Engine"
+RE[ResolutionEngine]
+EE[EntityExtractor]
+ES[EmbeddingService]
+CS[ClusterResolver]
+SS[SimilarityScorer]
+EN[EntityNormalizer]
+end
+subgraph "API Layer"
+AS[Express Server]
+IR[Ingest Routes]
+RR[Resolve Routes]
+CR[Cluster Routes]
+HR[Health Routes]
 end
 subgraph "Repository Layer"
-D1["EntityRepository"]
-D2["ClusterRepository"]
+DR[Database Repository]
+ER[Entity Repository]
+SR[Site Repository]
+CR[Cluster Repository]
+ESR[Embedding Repository]
 end
-subgraph "Domain"
-M1["Entity model"]
-end
-R1 --> S1
-R1 --> S2
-R2 --> S4
-S1 --> D1
-S2 --> D1
-S3 --> D2
-S4 --> S1
-S4 --> S2
-S4 --> S3
-D1 --> M1
+RE --> EE
+RE --> ES
+RE --> CS
+RE --> SS
+RE --> EN
+AS --> IR
+AS --> RR
+AS --> CR
+AS --> HR
+EE --> DR
+ES --> DR
+CS --> DR
+SS --> DR
+EN --> DR
 ```
 
 **Diagram sources**
-- [src/api/routes/ingest-site.ts:1-19](file://src/api/routes/ingest-site.ts#L1-L19)
-- [src/api/routes/resolve-actor.ts:1-19](file://src/api/routes/resolve-actor.ts#L1-L19)
-- [src/service/EntityExtractor.ts:1-53](file://src/service/EntityExtractor.ts#L1-L53)
-- [src/service/EmbeddingService.ts:1-66](file://src/service/EmbeddingService.ts#L1-L66)
-- [src/service/ClusterResolver.ts:1-85](file://src/service/ClusterResolver.ts#L1-L85)
-- [src/service/ResolutionEngine.ts:1-70](file://src/service/ResolutionEngine.ts#L1-L70)
-- [src/repository/EntityRepository.ts:1-103](file://src/repository/EntityRepository.ts#L1-L103)
-- [src/repository/ClusterRepository.ts:1-92](file://src/repository/ClusterRepository.ts#L1-L92)
-- [src/domain/models/Entity.ts:1-73](file://src/domain/models/Entity.ts#L1-L73)
+- [src/service/ResolutionEngine.ts:102-124](file://src/service/ResolutionEngine.ts#L102-L124)
+- [src/api/server.ts:22-81](file://src/api/server.ts#L22-L81)
+- [src/repository/Database.ts:28-50](file://src/repository/Database.ts#L28-L50)
+
+### Core Backend Services
+- **EntityExtractor**: Advanced entity extraction using regex patterns and optional LLM enhancement
+- **EmbeddingService**: 1024-dimensional vector generation via Mixedbread AI with caching and retry logic
+- **SimilarityScorer**: Cosine similarity computation for semantic matching
+- **ClusterResolver**: Intelligent cluster assignment and merging based on entity overlap
+- **ResolutionEngine**: Orchestration of the complete resolution pipeline
 
 **Section sources**
-- [README.md:107-137](file://README.md#L107-L137)
-- [ARCHITECTURE.md:9-47](file://ARCHITECTURE.md#L9-L47)
+- [src/service/EntityExtractor.ts:32-80](file://src/service/EntityExtractor.ts#L32-L80)
+- [src/service/EmbeddingService.ts:37-50](file://src/service/EmbeddingService.ts#L37-L50)
+- [src/service/ResolutionEngine.ts:102-124](file://src/service/ResolutionEngine.ts#L102-L124)
 
-## Core Components
-- EntityExtractor: Parses page text to discover emails, phones, handles, and crypto wallets, returning structured entities with confidence scores
-- EmbeddingService: Generates 1024-dimensional embeddings via Mixedbread AI for semantic similarity
-- ClusterResolver: Manages clusters, membership assignments, and merges overlapping groups
-- ResolutionEngine: Orchestrates the full resolution pipeline, aggregating signals and producing confidence scores and explanations
-- Repositories: Typed data access for entities and clusters
-- Domain models: Strong typing for entities and other domain constructs
+## Database Integration
+ARES uses Insforge as its primary database backend, providing a modern supabase-compatible database with advanced features:
 
-These components collectively enable actor resolution by combining deterministic entity matches with embedding-based similarity to assign sites and entities to operator clusters.
-
-**Section sources**
-- [ARCHITECTURE.md:144-175](file://ARCHITECTURE.md#L144-L175)
-- [src/service/EntityExtractor.ts:1-53](file://src/service/EntityExtractor.ts#L1-L53)
-- [src/service/EmbeddingService.ts:1-66](file://src/service/EmbeddingService.ts#L1-L66)
-- [src/service/ClusterResolver.ts:1-85](file://src/service/ClusterResolver.ts#L1-L85)
-- [src/service/ResolutionEngine.ts:1-70](file://src/service/ResolutionEngine.ts#L1-L70)
-- [src/repository/EntityRepository.ts:1-103](file://src/repository/EntityRepository.ts#L1-L103)
-- [src/repository/ClusterRepository.ts:1-92](file://src/repository/ClusterRepository.ts#L1-L92)
-- [src/domain/models/Entity.ts:1-73](file://src/domain/models/Entity.ts#L1-L73)
-
-## Architecture Overview
-ARES is a modular, layered service with three primary layers:
-- API Layer: Exposes REST endpoints for ingestion, resolution, and cluster inspection
-- Service Layer: Implements core resolution logic, entity extraction, embeddings, similarity scoring, and clustering
-- Repository Layer: Provides typed data access to PostgreSQL with pgvector for vector similarity
-
+### Insforge Database Architecture
 ```mermaid
 graph TB
-A["Client"] --> B["Express Server"]
-B --> C["Routes"]
-C --> D["ResolutionEngine"]
-D --> E["EntityExtractor"]
-D --> F["EmbeddingService"]
-D --> G["ClusterResolver"]
-E --> H["EntityRepository"]
-F --> H
-G --> I["ClusterRepository"]
-H --> J["PostgreSQL + pgvector"]
-I --> J
+subgraph "Insforge Database"
+S[Sites Table]
+E[Entities Table]
+C[Clusters Table]
+CM[Cluster Memberships Table]
+EM[Embeddings Table]
+RR[Resolution Runs Table]
+end
+subgraph "Relationships"
+S --> E
+C --> CM
+E --> CM
+S --> CM
+S --> EM
+end
+subgraph "Features"
+F1[Row Level Security]
+F2[Real-time Subscriptions]
+F3[PostgreSQL Compatibility]
+F4[Vector Extensions]
+end
 ```
 
 **Diagram sources**
-- [src/api/server.ts](file://src/api/server.ts)
-- [src/service/ResolutionEngine.ts:1-70](file://src/service/ResolutionEngine.ts#L1-L70)
-- [src/service/EntityExtractor.ts:1-53](file://src/service/EntityExtractor.ts#L1-L53)
-- [src/service/EmbeddingService.ts:1-66](file://src/service/EmbeddingService.ts#L1-L66)
-- [src/service/ClusterResolver.ts:1-85](file://src/service/ClusterResolver.ts#L1-L85)
-- [src/repository/EntityRepository.ts:1-103](file://src/repository/EntityRepository.ts#L1-L103)
-- [src/repository/ClusterRepository.ts:1-92](file://src/repository/ClusterRepository.ts#L1-L92)
+- [src/repository/Database.ts:117-204](file://src/repository/Database.ts#L117-L204)
 
-## Detailed Component Analysis
+### Database Features
+- **Row Level Security**: Automatic tenant isolation and access control
+- **Real-time Subscriptions**: Live updates for dashboard and monitoring
+- **PostgreSQL Compatibility**: Full SQL compatibility with advanced extensions
+- **Vector Extensions**: Native support for similarity search and ML workloads
+- **Typed Query Builders**: Compile-time safety with TypeScript integration
 
-### Conceptual Overview: What Is Entity Resolution?
-Entity resolution is the process of determining whether multiple pieces of information (such as websites, emails, phone numbers, or handles) refer to the same real-world operator. In ARES:
-- Deterministic signals: Exact matches on normalized values (e.g., normalized email or phone)
-- Behavioral signals: Embedding similarity between page content or contact information
-- Aggregation: Weighted combination of signals produces a confidence score
-- Assignment: Sites/entities are assigned to an existing cluster or a new one is created
+**Section sources**
+- [src/repository/Database.ts:28-50](file://src/repository/Database.ts#L28-L50)
+- [src/repository/Database.ts:117-204](file://src/repository/Database.ts#L117-L204)
 
-This approach helps investigators and security teams move from isolated incidents to understanding coordinated operations.
+## Core Capabilities
+ARES provides comprehensive fraud detection capabilities through its integrated service ecosystem:
 
-[No sources needed since this section explains a conceptual concept]
-
-### Technical Deep Dive: Vector Similarity Approach
-ARES uses embedding vectors to capture semantic similarity between textual content. The pipeline:
-- Generate embeddings for page content and contact information using Mixedbread AI
-- Store vectors in PostgreSQL with pgvector for efficient similarity search
-- Compute cosine similarity against stored vectors to find related content
-- Apply thresholds to include matches in the resolution process
-
+### Entity Resolution Pipeline
 ```mermaid
 flowchart TD
-Start(["Start"]) --> Gen["Generate Embeddings"]
-Gen --> Store["Store Vectors in Database"]
-Store --> Query["Query Similar Items"]
-Query --> Score["Compute Cosine Similarity"]
-Score --> Filter{"Score > Threshold?"}
-Filter --> |Yes| Include["Include in Resolution"]
-Filter --> |No| Exclude["Exclude from Resolution"]
-Include --> End(["End"])
-Exclude --> End
+Start([Input: URL/Content]) --> Extract[Extract Entities]
+Extract --> Normalize[Normalize Values]
+Normalize --> Embed[Generate Embeddings]
+Embed --> Similarity[Similarity Search]
+Similarity --> Score[Calculate Confidence]
+Score --> Cluster[Assign to Cluster]
+Cluster --> Output([Resolved Actor])
+Extract --> LLM[Optional LLM Enhancement]
+LLM --> Extract
+Similarity --> Threshold{Above Threshold?}
+Threshold --> |Yes| Include[Include in Resolution]
+Threshold --> |No| Exclude[Exclude from Resolution]
+Include --> Score
+Exclude --> Score
 ```
 
 **Diagram sources**
-- [src/service/EmbeddingService.ts:1-66](file://src/service/EmbeddingService.ts#L1-L66)
-- [ARCHITECTURE.md:230-241](file://ARCHITECTURE.md#L230-L241)
+- [src/service/ResolutionEngine.ts:242-333](file://src/service/ResolutionEngine.ts#L242-L333)
+- [src/service/EmbeddingService.ts:55-81](file://src/service/EmbeddingService.ts#L55-L81)
+
+### Key Capabilities
+- **Multi-modal Entity Extraction**: Emails, phones, handles, and crypto wallets
+- **Semantic Understanding**: Context-aware matching using embedding similarity
+- **Intelligent Clustering**: Sophisticated algorithms for operator identification
+- **Confidence Scoring**: Quantified trust levels for investigation decisions
+- **Explainable AI**: Detailed reasoning for resolution decisions
+- **Real-time Processing**: Immediate results for active investigations
 
 **Section sources**
-- [ARCHITECTURE.md:156-164](file://ARCHITECTURE.md#L156-L164)
-- [ARCHITECTURE.md:207-227](file://ARCHITECTURE.md#L207-L227)
+- [src/service/EntityExtractor.ts:43-80](file://src/service/EntityExtractor.ts#L43-L80)
+- [src/service/EmbeddingService.ts:86-100](file://src/service/EmbeddingService.ts#L86-L100)
+- [src/service/ResolutionEngine.ts:242-333](file://src/service/ResolutionEngine.ts#L242-L333)
 
-### API Workflows: Ingestion and Resolution
-Ingestion flow:
-- Client posts storefront metadata and content
-- System validates input, creates a site record, extracts entities, normalizes values, generates embeddings, and persists all data
-- Optional immediate actor resolution can be triggered
+## API Endpoints
+ARES exposes a comprehensive REST API for integration with external systems:
 
-```mermaid
-sequenceDiagram
-participant C as "Client"
-participant S as "Server"
-participant R as "Route Handler"
-participant E as "EntityExtractor"
-participant B as "EmbeddingService"
-participant DB as "Repositories"
-C->>S : "POST /api/ingest-site"
-S->>R : "Dispatch request"
-R->>R : "Validate input"
-R->>DB : "Create site record"
-R->>E : "Extract entities"
-E-->>R : "Entities"
-R->>B : "Generate embeddings"
-B-->>R : "Vectors"
-R->>DB : "Persist entities and embeddings"
-R-->>C : "{site_id, counts}"
-```
+### API Endpoint Catalog
+| Endpoint | Method | Description | Authentication |
+|----------|--------|-------------|----------------|
+| `/health` | GET | Health check and system status | None |
+| `/api/ingest-site` | POST | Ingest new storefront with entities | None |
+| `/api/resolve-actor` | POST | Resolve site to operator cluster | None |
+| `/api/clusters/:id` | GET | Get cluster details and members | None |
+| `/api/seeds` | POST | Seed database with test data | Development Only |
 
-**Diagram sources**
-- [src/api/routes/ingest-site.ts:1-19](file://src/api/routes/ingest-site.ts#L1-L19)
-- [src/service/EntityExtractor.ts:1-53](file://src/service/EntityExtractor.ts#L1-L53)
-- [src/service/EmbeddingService.ts:1-66](file://src/service/EmbeddingService.ts#L1-L66)
-- [src/repository/EntityRepository.ts:1-103](file://src/repository/EntityRepository.ts#L1-L103)
-
-Resolution flow:
-- Client submits a URL or entities
-- System gathers signals: exact entity matches, embedding similarity, and domain patterns
-- Aggregates weighted confidence and assigns to an existing cluster or creates a new one
-- Returns cluster ID, confidence, and explanation
-
-```mermaid
-sequenceDiagram
-participant C as "Client"
-participant S as "Server"
-participant R as "Route Handler"
-participant E as "EntityExtractor"
-participant N as "Normalization"
-participant B as "EmbeddingService"
-participant SS as "SimilarityScorer"
-participant CR as "ClusterResolver"
-participant RE as "ResolutionEngine"
-C->>S : "POST /api/resolve-actor"
-S->>R : "Dispatch request"
-R->>E : "Extract entities"
-E-->>R : "Entities"
-R->>N : "Normalize values"
-N-->>R : "Normalized entities"
-R->>B : "Generate embeddings"
-B-->>R : "Vectors"
-R->>SS : "Find similar items"
-SS-->>R : "Top-K matches"
-R->>RE : "Aggregate signals"
-RE->>CR : "Find/Create cluster"
-CR-->>RE : "Cluster assignment"
-RE-->>C : "{cluster_id, confidence, explanation}"
-```
-
-**Diagram sources**
-- [src/api/routes/resolve-actor.ts:1-19](file://src/api/routes/resolve-actor.ts#L1-L19)
-- [src/service/EntityExtractor.ts:1-53](file://src/service/EntityExtractor.ts#L1-L53)
-- [src/service/EmbeddingService.ts:1-66](file://src/service/EmbeddingService.ts#L1-L66)
-- [src/service/ClusterResolver.ts:1-85](file://src/service/ClusterResolver.ts#L1-L85)
-- [src/service/ResolutionEngine.ts:1-70](file://src/service/ResolutionEngine.ts#L1-L70)
+### API Response Patterns
+All responses follow consistent patterns with standardized error handling and success responses. The API supports both synchronous operations for immediate results and asynchronous processing for complex analyses.
 
 **Section sources**
 - [README.md:50-104](file://README.md#L50-L104)
-- [ARCHITECTURE.md:97-140](file://ARCHITECTURE.md#L97-L140)
+- [src/api/server.ts:54-68](file://src/api/server.ts#L54-L68)
 
-### Practical Examples: Investigating Fraudulent Marketplaces
-- Ingest suspicious storefronts: Submit URLs with page content; ARES extracts entities and generates embeddings
-- Resolve actors: Send a suspected storefront or known entities to resolve; ARES returns the most likely operator cluster with confidence and explanation
-- Inspect clusters: Retrieve cluster details to see all associated domains and entities, aiding manual verification and follow-up actions
+## Development Workflow
+ARES provides a complete development environment with modern tooling and testing infrastructure:
 
-Integration patterns:
-- Use the ingestion endpoint to batch-process marketplace listings
-- Call the resolution endpoint programmatically from SIEM, ticketing, or internal investigation tools
-- Use cluster details to export operator profiles for watchlists or takedown workflows
-
-**Section sources**
-- [README.md:50-104](file://README.md#L50-L104)
-
-## Dependency Analysis
-ARES relies on external services and libraries:
-- PostgreSQL with pgvector for persistent storage and vector similarity
-- Mixedbread AI for embedding generation
-- Express for the HTTP server and routing
-- Utility libraries for logging, validation, and environment configuration
-
+### Development Environment
 ```mermaid
-graph LR
-A["ares (app)"] --> B["Express"]
-A --> C["PostgreSQL + pgvector"]
-A --> D["Mixedbread AI"]
-A --> E["Utilities (pino, uuid, zod, dotenv)"]
+graph TB
+subgraph "Development Tools"
+TS[TypeScript]
+Jest[Jest Testing]
+ESLint[ESLint]
+Prettier[Prettier]
+Vite[Vite Dev Server]
+end
+subgraph "Database Operations"
+Migrate[Migrations]
+Seed[Seed Data]
+Demo[Demo Scripts]
+end
+subgraph "Frontend Development"
+React[React Dev Server]
+HotReload[Hot Reload]
+Tailwind[Tailwind CSS]
+end
+subgraph "Backend Development"
+Express[Express Server]
+HotReload[Hot Reload]
+Debug[Debugging]
+end
+TS --> Jest
+TS --> ESLint
+TS --> Prettier
+Vite --> React
+Express --> Debug
 ```
 
 **Diagram sources**
-- [package.json:29-39](file://package.json#L29-L39)
-- [package.json:40-56](file://package.json#L40-L56)
-- [ARCHITECTURE.md:230-241](file://ARCHITECTURE.md#L230-L241)
+- [package.json:6-21](file://package.json#L6-L21)
+
+### Development Commands
+- `npm run dev`: Start both frontend and backend with hot reload
+- `npm run build`: Compile TypeScript for production
+- `npm run test`: Run comprehensive test suite
+- `npm run db:migrate`: Apply database migrations
+- `npm run db:seed`: Populate database with sample data
+- `npm run demo`: Execute end-to-end demonstration
 
 **Section sources**
-- [package.json:1-61](file://package.json#L1-L61)
-- [ARCHITECTURE.md:230-241](file://ARCHITECTURE.md#L230-L241)
+- [README.md:188-236](file://README.md#L188-L236)
+- [package.json:6-21](file://package.json#L6-L21)
 
-## Performance Considerations
-- Vector similarity search: Use pgvector IVFFlat indexing for approximate nearest neighbor search to balance recall and speed
-- Batch embedding generation: Process multiple texts concurrently with rate-limit aware retries to Mixedbread AI
-- Indexing strategy: Maintain indexes on domains, normalized values, and membership joins to optimize lookups
-- Confidence thresholds: Tune thresholds to reduce false positives while preserving recall for investigation workflows
+## Practical Use Cases
+ARES excels in real-world fraud investigation scenarios with proven workflows:
 
-[No sources needed since this section provides general guidance]
+### Fraud Investigation Workflow
+```mermaid
+sequenceDiagram
+participant Investigator as Fraud Investigator
+participant ARES as ARES System
+participant Database as Insforge Database
+Investigator->>ARES : Submit suspicious storefront URL
+ARES->>Database : Ingest site and extract entities
+ARES->>Database : Generate embeddings
+ARES->>Database : Search for similar patterns
+ARES->>Investigator : Return resolved actor with confidence
+Investigator->>Database : Review cluster details
+Investigator->>ARES : Request additional analysis
+ARES->>Database : Query related domains and entities
+ARES->>Investigator : Provide comprehensive operator profile
+```
 
-## Troubleshooting Guide
-Common issues and resolutions:
-- Database connectivity: Ensure DATABASE_URL is set and reachable; the server logs connection attempts and exits in production if unavailable
-- Missing environment variables: MIXEDBREAD_API_KEY is required for embedding generation; configure it in .env
-- Health checks: Use GET /health to verify server readiness
-- API errors: Stub routes currently return 501 Not Implemented; implement route handlers as services become available
-
-Operational tips:
-- Monitor logs for startup events and graceful shutdown signals
-- Validate inputs using the provided request/response contracts before integrating
-- Use the demo script to validate end-to-end ingestion and resolution flows
+### Common Investigation Scenarios
+- **Counterfeit Marketplace Analysis**: Identify coordinated operators across multiple fake stores
+- **Phishing Campaign Tracking**: Link related phishing sites and contact information
+- **Darknet Monitoring**: Track illegal market operators across encrypted networks
+- **Brand Protection**: Detect unauthorized resellers and counterfeit operations
+- **Regulatory Compliance**: Monitor for violations across digital platforms
 
 **Section sources**
-- [src/index.ts:12-107](file://src/index.ts#L12-L107)
-- [README.md:193-203](file://README.md#L193-L203)
-- [README.md:50-59](file://README.md#L50-L59)
+- [README.md:107-147](file://README.md#L107-L147)
 
 ## Conclusion
-ARES provides a robust foundation for fraud investigators and security teams to identify and track operators behind counterfeit storefronts. By combining deterministic entity matching with embedding-based similarity and a clear clustering workflow, it transforms scattered signals into coherent operator profiles. The modular architecture, typed domain models, and REST API surface make it straightforward to integrate into existing security stacks and automate repetitive investigative tasks.
+ARES represents a comprehensive solution for modern fraud detection and entity resolution. The integrated React frontend provides intuitive investigation tools, while the Express backend delivers robust business logic powered by advanced AI services. The Insforge database integration ensures scalability, security, and real-time capabilities essential for active fraud investigation work.
 
-[No sources needed since this section summarizes without analyzing specific files]
+The platform's modular architecture, comprehensive API, and detailed frontend components make it suitable for deployment in various security environments while maintaining the flexibility needed for evolving fraud patterns. The combination of deterministic entity matching and semantic similarity provides investigators with both precision and contextual understanding necessary for effective fraud prevention and prosecution.
+
+Through its comprehensive capabilities in entity extraction, embedding generation, similarity scoring, and intelligent clustering, ARES transforms fragmented digital evidence into coherent operator profiles that drive successful fraud investigations and operational security improvements.

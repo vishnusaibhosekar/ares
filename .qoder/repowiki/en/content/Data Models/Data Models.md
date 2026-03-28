@@ -22,14 +22,11 @@
 
 ## Update Summary
 **Changes Made**
-- Updated Site model documentation to reflect nullable page_text and screenshot_hash fields
-- Enhanced Entity model validation documentation with explicit confidence range enforcement
-- Expanded Cluster model documentation with membership type enumeration and validation
-- Added comprehensive Embedding model documentation including vector dimension warnings
-- Updated ResolutionRun model documentation with typed input entities interface
-- Enhanced repository integration documentation for all models
-- Added service layer integration documentation for extraction and normalization
-- Updated database schema documentation with complete migration coverage
+- Updated all domain model documentation to reflect complete TypeScript implementations
+- Added comprehensive validation rules and immutability patterns for each model
+- Enhanced serialization formats and helper methods documentation
+- Updated repository integration patterns and database schema mappings
+- Expanded service layer integration documentation for extraction and normalization
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -496,17 +493,3 @@ The ARES domain models are designed as immutable, self-describing entities with 
 - [EntityExtractor.ts:10-53](file://src/service/EntityExtractor.ts#L10-L53)
 - [EntityNormalizer.ts:8-61](file://src/service/EntityNormalizer.ts#L8-L61)
 - [ClusterResolver.ts:10-85](file://src/service/ClusterResolver.ts#L10-L85)
-
-### Database Schema and Indexing Strategy
-The database schema supports comprehensive querying patterns with strategic indexing:
-
-- **Sites table**: Primary key on UUID, with indexes on domain, created_at, and first_seen_at for efficient filtering and sorting.
-- **Entities table**: Foreign key relationship with sites, composite indexes for type/value combinations and normalized values for deduplication.
-- **Clusters table**: Indexes on name, confidence, and created_at for fast cluster discovery and high-confidence filtering.
-- **Cluster memberships**: Multi-column indexes supporting both entity and site membership queries.
-- **Embeddings table**: Vector column with optional pgvector extension support and indexes on source_id and source_type.
-- **Resolution runs**: JSONB fields with indexes optimized for domain-based queries and result-based filtering.
-
-**Section sources**
-- [001_init_schema.sql:1-180](file://db/migrations/001_init_schema.sql#L1-L180)
-- [002_add_sample_indexes.sql:1-72](file://db/migrations/002_add_sample_indexes.sql#L1-L72)
