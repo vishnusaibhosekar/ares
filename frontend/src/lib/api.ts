@@ -16,8 +16,10 @@ import type {
     ApiErrorResponse,
 } from './types';
 
-// API base URL from environment or default
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// API base URL from environment
+// In production (Vercel), use empty string for same-origin requests
+// In development, use the Vite proxy (no base URL needed)
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 /**
  * Create axios instance with default config
