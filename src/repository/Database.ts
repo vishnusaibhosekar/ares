@@ -200,17 +200,17 @@ export class Database {
                         data,
                         { headers: { 'Prefer': 'return=representation' } }
                     );
-                    
+
                     if (!response.data || response.data.length === 0) {
                         throw new Error('Insert failed: No data returned');
                     }
-                    
+
                     return response.data[0].id as string;
                 } catch (error) {
                     const axiosError = error as AxiosError<{ message?: string; error?: string }>;
-                    const message = axiosError.response?.data?.message || 
-                                    axiosError.response?.data?.error || 
-                                    axiosError.message;
+                    const message = axiosError.response?.data?.message ||
+                        axiosError.response?.data?.error ||
+                        axiosError.message;
                     throw new Error(`Insert failed: ${message}`);
                 }
             },
@@ -221,17 +221,17 @@ export class Database {
                     const response = await client.get<T[]>(`/api/db/${tableName}`, {
                         params: { select: '*', id: `eq.${id}` }
                     });
-                    
+
                     if (!response.data || response.data.length === 0) {
                         return null;
                     }
-                    
+
                     return response.data[0];
                 } catch (error) {
                     const axiosError = error as AxiosError<{ message?: string; error?: string }>;
-                    const message = axiosError.response?.data?.message || 
-                                    axiosError.response?.data?.error || 
-                                    axiosError.message;
+                    const message = axiosError.response?.data?.message ||
+                        axiosError.response?.data?.error ||
+                        axiosError.message;
                     throw new Error(`Find failed: ${message}`);
                 }
             },
@@ -240,20 +240,20 @@ export class Database {
                 const client = db.getHttpClient();
                 try {
                     const params: Record<string, string> = { select: '*' };
-                    
+
                     if (filters && Object.keys(filters).length > 0) {
                         for (const [key, value] of Object.entries(filters)) {
                             params[key] = `eq.${value}`;
                         }
                     }
-                    
+
                     const response = await client.get<T[]>(`/api/db/${tableName}`, { params });
                     return response.data || [];
                 } catch (error) {
                     const axiosError = error as AxiosError<{ message?: string; error?: string }>;
-                    const message = axiosError.response?.data?.message || 
-                                    axiosError.response?.data?.error || 
-                                    axiosError.message;
+                    const message = axiosError.response?.data?.message ||
+                        axiosError.response?.data?.error ||
+                        axiosError.message;
                     throw new Error(`FindAll failed: ${message}`);
                 }
             },
@@ -264,16 +264,16 @@ export class Database {
                     await client.patch(
                         `/api/db/${tableName}`,
                         data,
-                        { 
+                        {
                             params: { id: `eq.${id}` },
                             headers: { 'Prefer': 'return=representation' }
                         }
                     );
                 } catch (error) {
                     const axiosError = error as AxiosError<{ message?: string; error?: string }>;
-                    const message = axiosError.response?.data?.message || 
-                                    axiosError.response?.data?.error || 
-                                    axiosError.message;
+                    const message = axiosError.response?.data?.message ||
+                        axiosError.response?.data?.error ||
+                        axiosError.message;
                     throw new Error(`Update failed: ${message}`);
                 }
             },
@@ -286,9 +286,9 @@ export class Database {
                     });
                 } catch (error) {
                     const axiosError = error as AxiosError<{ message?: string; error?: string }>;
-                    const message = axiosError.response?.data?.message || 
-                                    axiosError.response?.data?.error || 
-                                    axiosError.message;
+                    const message = axiosError.response?.data?.message ||
+                        axiosError.response?.data?.error ||
+                        axiosError.message;
                     throw new Error(`Delete failed: ${message}`);
                 }
             },

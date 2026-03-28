@@ -16,8 +16,10 @@ const router = Router();
 async function checkDatabase(): Promise<'connected' | 'disconnected'> {
     try {
         const db = Database.getInstance();
-        // Try a simple query
-        await db.sites().findAll();
+        // Check if connected using the isConnected flag
+        if (!db.isConnected()) {
+            return 'disconnected';
+        }
         return 'connected';
     } catch {
         return 'disconnected';
