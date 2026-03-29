@@ -7,3 +7,4 @@ export { EmbeddingService } from './EmbeddingService';
 export { SimilarityScorer } from './SimilarityScorer';
 export { ClusterResolver } from './ClusterResolver';
 export { ResolutionEngine } from './ResolutionEngine';
+export { AuthService } from './AuthService';

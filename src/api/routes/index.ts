@@ -6,3 +6,4 @@ export { default as resolveActorRouter, resolveActorRouter as resolveActor } fro
 export { default as clustersRouter, clustersRouter as clusters } from './clusters';
 export { default as seedsRouter, seedsRouter as seeds } from './seeds';
 export { default as healthRouter, healthRouter as health } from './health';
+export { default as authRouter, authRouter as auth } from './auth';

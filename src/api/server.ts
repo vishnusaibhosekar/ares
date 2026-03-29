@@ -14,7 +14,9 @@ import {
     clustersRouter,
     seedsRouter,
     healthRouter,
+    authRouter,
 } from './routes';
+import { authMiddleware } from './middleware/auth';
 
 /**
  * Create and configure Express application
@@ -51,14 +53,18 @@ export function createApp(): Application {
     // API Routes
     // ============================================
 
+    // Auth routes (public)
+    app.use('/api/auth', authRouter);
+
+    // Protected routes - require authentication
     // POST /api/ingest-site - Ingest a new storefront
-    app.use('/api/ingest-site', ingestSiteRouter);
+    app.use('/api/ingest-site', authMiddleware, ingestSiteRouter);
 
     // POST /api/resolve-actor - Resolve a site to an operator cluster
-    app.use('/api/resolve-actor', resolveActorRouter);
+    app.use('/api/resolve-actor', authMiddleware, resolveActorRouter);
 
     // GET /api/clusters/:id - Fetch cluster details
-    app.use('/api/clusters', clustersRouter);
+    app.use('/api/clusters', authMiddleware, clustersRouter);
 
     // POST /api/seeds - Dev-only route for seeding test data
     // Only available in development/test environments

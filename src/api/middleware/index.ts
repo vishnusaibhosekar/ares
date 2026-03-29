@@ -1,7 +1,7 @@
 // src/api/middleware/index.ts
 // Export all middleware
 
-export { authMiddleware, validateApiKey } from './auth';
+export { authMiddleware, optionalAuthMiddleware } from './auth';
 export {
     errorHandler,
     notFoundHandler,
