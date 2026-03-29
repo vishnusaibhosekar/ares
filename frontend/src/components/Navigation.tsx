@@ -2,16 +2,19 @@
  * Navigation Component
  */
 
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
     Home,
     Plus,
     Search,
     Menu,
     X,
-    Activity
+    Activity,
+    LogOut,
+    User
 } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
@@ -21,6 +24,13 @@ const navItems = [
 
 export function Navigation() {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const { user, signOut } = useAuth();
+    const navigate = useNavigate();
+
+    async function handleSignOut() {
+        await signOut();
+        navigate('/login');
+    }
 
     return (
         <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -51,6 +61,25 @@ export function Navigation() {
                                 {item.label}
                             </NavLink>
                         ))}
+                    </div>
+
+                    {/* User Menu */}
+                    <div className="hidden md:flex items-center gap-4">
+                        {user && (
+                            <>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <User className="w-4 h-4" />
+                                    <span>{user.profile?.name || user.email}</span>
+                                </div>
+                                <button
+                                    onClick={handleSignOut}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    Sign out
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     {/* Mobile menu button */}
@@ -85,6 +114,28 @@ export function Navigation() {
                                 {item.label}
                             </NavLink>
                         ))}
+                        
+                        {/* Mobile User Section */}
+                        {user && (
+                            <>
+                                <div className="border-t border-gray-200 mt-2 pt-2">
+                                    <div className="flex items-center gap-3 px-3 py-2 text-sm text-gray-600">
+                                        <User className="w-5 h-5" />
+                                        <span>{user.profile?.name || user.email}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setMobileOpen(false);
+                                            handleSignOut();
+                                        }}
+                                        className="flex items-center gap-3 px-3 py-2 w-full text-left text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                        <LogOut className="w-5 h-5" />
+                                        Sign out
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

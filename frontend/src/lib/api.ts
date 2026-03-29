@@ -14,6 +14,10 @@ import type {
     SeedDataRequest,
     SeedDataResponse,
     ApiErrorResponse,
+    SignInRequest,
+    SignUpRequest,
+    AuthResponse,
+    AuthUser,
 } from './types';
 
 // API base URL from environment
@@ -32,9 +36,32 @@ const apiClient: AxiosInstance = axios.create({
     timeout: 30000, // 30 seconds
 });
 
-// Request interceptor for logging
+// Store for auth token
+let authToken: string | null = null;
+
+/**
+ * Set auth token for API requests
+ */
+export function setAuthToken(token: string): void {
+    authToken = token;
+}
+
+/**
+ * Clear auth token
+ */
+export function clearAuthToken(): void {
+    authToken = null;
+}
+
+// Request interceptor for logging and auth
 apiClient.interceptors.request.use((config) => {
     console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+
+    // Add auth token if available
+    if (authToken) {
+        config.headers.Authorization = `Bearer ${authToken}`;
+    }
+
     return config;
 });
 
@@ -78,6 +105,29 @@ export async function seedDatabase(data: SeedDataRequest = {}): Promise<SeedData
         include_matches: data.include_matches ?? true,
     });
     return response.data;
+}
+
+// ============================================
+// Authentication API
+// ============================================
+
+export async function signIn(data: SignInRequest): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/api/auth/signin', data);
+    return response.data;
+}
+
+export async function signUp(data: SignUpRequest): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/api/auth/signup', data);
+    return response.data;
+}
+
+export async function signOut(): Promise<void> {
+    await apiClient.post('/api/auth/signout');
+}
+
+export async function getCurrentUser(): Promise<AuthUser> {
+    const response = await apiClient.get<{ user: AuthUser }>('/api/auth/me');
+    return response.data.user;
 }
 
 /**

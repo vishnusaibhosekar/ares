@@ -151,3 +151,36 @@ export interface ApiErrorResponse {
     timestamp: string;
     request_id: string;
 }
+
+// ============================================
+// Authentication
+// ============================================
+
+export interface AuthUser {
+    id: string;
+    email: string;
+    emailVerified: boolean;
+    createdAt: string;
+    updatedAt: string;
+    providers: string[];
+    profile: {
+        name?: string;
+    };
+    metadata: Record<string, unknown>;
+}
+
+export interface SignInRequest {
+    email: string;
+    password: string;
+}
+
+export interface SignUpRequest {
+    email: string;
+    password: string;
+    name?: string;
+}
+
+export interface AuthResponse {
+    user: AuthUser;
+    accessToken: string;
+}
