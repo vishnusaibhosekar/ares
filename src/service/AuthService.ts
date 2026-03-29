@@ -71,12 +71,12 @@ export class AuthService {
                 password,
                 name,
             });
-            
+
             // If email verification required, user was created but can't login yet
             if (response.data.requireEmailVerification && !response.data.accessToken) {
                 throw new Error('Email verification required. Please check your email.');
             }
-            
+
             // Return user info with token
             return {
                 user: {
@@ -114,11 +114,11 @@ export class AuthService {
 
     /**
      * Get current user from access token
-     * Uses Insforge endpoint: GET /api/auth/sessions/me
+     * Uses Insforge endpoint: GET /api/auth/sessions/current
      */
     async getCurrentUser(accessToken: string): Promise<AuthUser> {
         try {
-            const response = await this.httpClient.get<{ user: AuthUser }>('/api/auth/sessions/me', {
+            const response = await this.httpClient.get<{ user: AuthUser }>('/api/auth/sessions/current', {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                 },
