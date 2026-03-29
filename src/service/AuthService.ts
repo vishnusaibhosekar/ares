@@ -62,28 +62,45 @@ export class AuthService {
 
     /**
      * Sign up a new user
+     * Uses Insforge endpoint: POST /api/auth/users
      */
     async signUp(email: string, password: string, name?: string): Promise<AuthResponse> {
         try {
-            const response = await this.httpClient.post<AuthResponse>('/api/auth/signup', {
+            const response = await this.httpClient.post<{ accessToken: string | null; requireEmailVerification: boolean }>('/api/auth/users', {
                 email,
                 password,
                 name,
             });
-            return response.data;
+            
+            // If email verification required, user was created but can't login yet
+            if (response.data.requireEmailVerification && !response.data.accessToken) {
+                throw new Error('Email verification required. Please check your email.');
+            }
+            
+            // Return user info with token
+            return {
+                user: {
+                    id: '',
+                    email,
+                    emailVerified: !response.data.requireEmailVerification,
+                    profile: { name },
+                },
+                accessToken: response.data.accessToken || '',
+            };
         } catch (error) {
             const axiosError = error as AxiosError<AuthError>;
-            const message = axiosError.response?.data?.message || axiosError.message;
+            const message = axiosError.response?.data?.message || (error instanceof Error ? error.message : axiosError.message);
             throw new Error(`Sign up failed: ${message}`);
         }
     }
 
     /**
      * Sign in with email and password
+     * Uses Insforge endpoint: POST /api/auth/sessions
      */
     async signIn(email: string, password: string): Promise<AuthResponse> {
         try {
-            const response = await this.httpClient.post<AuthResponse>('/api/auth/signin', {
+            const response = await this.httpClient.post<AuthResponse>('/api/auth/sessions', {
                 email,
                 password,
             });
@@ -97,10 +114,11 @@ export class AuthService {
 
     /**
      * Get current user from access token
+     * Uses Insforge endpoint: GET /api/auth/sessions/me
      */
     async getCurrentUser(accessToken: string): Promise<AuthUser> {
         try {
-            const response = await this.httpClient.get<{ user: AuthUser }>('/api/auth/user', {
+            const response = await this.httpClient.get<{ user: AuthUser }>('/api/auth/sessions/me', {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                 },
@@ -126,10 +144,11 @@ export class AuthService {
 
     /**
      * Sign out (invalidate token on server)
+     * Uses Insforge endpoint: DELETE /api/auth/sessions
      */
     async signOut(accessToken: string): Promise<void> {
         try {
-            await this.httpClient.post('/api/auth/signout', {}, {
+            await this.httpClient.delete('/api/auth/sessions', {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                 },

@@ -23,9 +23,9 @@ declare global {
 export async function authMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
         const authHeader = req.headers.authorization;
-        
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            res.status(401).json({ 
+            res.status(401).json({
                 error: 'Unauthorized',
                 message: 'No token provided. Include Authorization: Bearer <token> header.'
             });
@@ -33,13 +33,13 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         }
 
         const token = authHeader.substring(7);
-        
+
         // Validate token via AuthService
         const authService = AuthService.getInstance();
         const user = await authService.validateToken(token);
-        
+
         if (!user) {
-            res.status(401).json({ 
+            res.status(401).json({
                 error: 'Unauthorized',
                 message: 'Invalid or expired token'
             });
@@ -54,7 +54,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
         next();
     } catch (error) {
-        res.status(401).json({ 
+        res.status(401).json({
             error: 'Unauthorized',
             message: 'Authentication failed'
         });
@@ -67,12 +67,12 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 export async function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
         const authHeader = req.headers.authorization;
-        
+
         if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
             const authService = AuthService.getInstance();
             const user = await authService.validateToken(token);
-            
+
             if (user) {
                 req.user = {
                     id: user.id,
@@ -80,7 +80,7 @@ export async function optionalAuthMiddleware(req: Request, res: Response, next: 
                 };
             }
         }
-        
+
         next();
     } catch {
         // Continue without user on error

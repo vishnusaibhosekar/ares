@@ -50,7 +50,7 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
         });
     } catch (error) {
         logger.error({ error }, 'Sign up failed');
-        
+
         const message = error instanceof Error ? error.message : 'Sign up failed';
         res.status(400).json({ error: message });
     }
@@ -86,7 +86,7 @@ router.post('/signin', async (req: Request, res: Response, next: NextFunction) =
         });
     } catch (error) {
         logger.error({ error }, 'Sign in failed');
-        
+
         const message = error instanceof Error ? error.message : 'Invalid credentials';
         res.status(401).json({ error: message });
     }
