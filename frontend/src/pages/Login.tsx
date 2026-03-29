@@ -12,7 +12,7 @@ export default function Login() {
     const navigate = useNavigate();
     const location = useLocation();
     const { signIn, isLoading: authLoading } = useAuth();
-    
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);

@@ -114,7 +114,7 @@ export function Navigation() {
                                 {item.label}
                             </NavLink>
                         ))}
-                        
+
                         {/* Mobile User Section */}
                         {user && (
                             <>
